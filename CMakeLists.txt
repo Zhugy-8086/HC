@@ -36,12 +36,20 @@ set(SGN_EXT_SOURCES
 # Static library: core
 add_library(sgn_core STATIC ${SGN_CORE_SOURCES})
 
+# Math library linkage (portable: Unix needs libm, Windows/MSVC has it in libc)
+if(UNIX OR MINGW)
+    target_link_libraries(sgn_core PUBLIC m)
+endif()
+
 # Static library: extensions
 add_library(sgn_ext STATIC ${SGN_EXT_SOURCES})
 target_link_libraries(sgn_ext PUBLIC sgn_core)
 
 # Full library (all modules)
 add_library(sgn STATIC ${SGN_CORE_SOURCES} ${SGN_EXT_SOURCES})
+if(UNIX OR MINGW)
+    target_link_libraries(sgn PUBLIC m)
+endif()
 
 # Test executable
 add_executable(test_sgn tests/test_sgn.c)
