@@ -1,0 +1,77 @@
+# Build artifacts
+*.exe
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+
+# Build directories
+build/
+out/
+cmake-build-*/
+[Bb]in/
+[Oo]bj/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+develop-eggs/
+sdist/
+wheels/
+pip-log.txt
+pip-delete-this-directory.txt
+*.so
+build_ext/
+
+# pybind11 / setuptools
+*.pyd
+
+# IDE / Editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup / Temp
+*.bak
+*.tmp
+*.swp
+*~
+err.txt
+err*.txt
+out*.txt
+
+# Archives
+*.zip
+*.7z
+*.tar
+*.gz
+*.rar
+
+# Logs
+*.log
+
+# Test binaries
+tests/*.exe

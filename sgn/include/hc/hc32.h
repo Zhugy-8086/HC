@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hc32.h
  * @brief SGN HC32 类型声明与运算接口
  * @version 2.0.0
@@ -32,21 +35,21 @@ extern hc32_t SGN_HC32_ZERO;
 extern hc32_t SGN_HC32_MAX;
 
 /* 比较 */
-bool hc32_less(const hc32_t* a, const hc32_t* b);
-bool hc32_equal(const hc32_t* a, const hc32_t* b);
+bool hc32_less(const hc32_t* SGN_RESTRICT a, const hc32_t* SGN_RESTRICT b);
+bool hc32_equal(const hc32_t* SGN_RESTRICT a, const hc32_t* SGN_RESTRICT b);
 
 /* 加法 */
-hc32_t hc32_add_sat(const hc32_t* a, const hc32_t* b);
-hc32_t hc32_add_wrap(const hc32_t* a, const hc32_t* b);
+hc32_t hc32_add_sat(const hc32_t* SGN_RESTRICT a, const hc32_t* SGN_RESTRICT b);
+hc32_t hc32_add_wrap(const hc32_t* SGN_RESTRICT a, const hc32_t* SGN_RESTRICT b);
 
 /* 减法 */
-hc32_t hc32_sub(const hc32_t* a, const hc32_t* b);
+hc32_t hc32_sub(const hc32_t* SGN_RESTRICT a, const hc32_t* SGN_RESTRICT b);
 
 /* 软阈值 */
-hc32_t hc32_soft_threshold(const hc32_t* X, const hc32_t* Lambda);
+hc32_t hc32_soft_threshold(const hc32_t* SGN_RESTRICT X, const hc32_t* SGN_RESTRICT Lambda);
 
 /* 移位 */
-hc32_t hc32_shift_right(const hc32_t* a, uint8_t shift);
+hc32_t hc32_shift_right(const hc32_t* SGN_RESTRICT a, uint8_t shift);
 
 /* 物理值转换 */
 double      hc32_to_double(hc32_t h);

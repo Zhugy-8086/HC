@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hc8.c
  * @brief SGN HC8 全部运算实现
@@ -30,34 +33,30 @@ hc8_t SGN_HC8_MAX  = {{255,255,255,255,255,255}};
  * 比较
  * ============================================================================ */
 
-bool hc8_less(const hc8_t* a, const hc8_t* b) {
-    for (int i = 0; i < 6; ++i) {
-        if (a->v[i] != b->v[i]) return a->v[i] < b->v[i];
-    }
-    return false;
+bool hc8_less(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return false;
+    /* HC8 为单字节数组，字节序即字典序，可直接用 memcmp */
+    return memcmp(a, b, sizeof(hc8_t)) < 0;
 }
 
-bool hc8_equal(const hc8_t* a, const hc8_t* b) {
-    for (int i = 0; i < 6; ++i) {
-        if (a->v[i] != b->v[i]) return false;
-    }
-    return true;
+bool hc8_equal(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return false;
+    return memcmp(a, b, sizeof(hc8_t)) == 0;
 }
 
-bool shc8_less(const shc8_t* a, const shc8_t* b) {
+bool shc8_less(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return false;
     if (a->sign != b->sign) return a->sign != 0;
     if (a->int_part != b->int_part) return a->int_part < b->int_part;
-    for (int i = 0; i < 6; ++i) {
-        if (a->frac.v[i] != b->frac.v[i]) return a->frac.v[i] < b->frac.v[i];
-    }
-    return false;
+    return memcmp(&a->frac, &b->frac, sizeof(hc8_t)) < 0;
 }
 
 /* ============================================================================
  * 加法
  * ============================================================================ */
 
-hc8_t hc8_add_sat(const hc8_t* a, const hc8_t* b) {
+hc8_t hc8_add_sat(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return SGN_HC8_ZERO;
     hc8_t c;
     uint16_t carry = 0;
     for (int i = 5; i >= 0; --i) {
@@ -69,7 +68,8 @@ hc8_t hc8_add_sat(const hc8_t* a, const hc8_t* b) {
     return c;
 }
 
-hc8_t hc8_add_wrap(const hc8_t* a, const hc8_t* b) {
+hc8_t hc8_add_wrap(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return SGN_HC8_ZERO;
     hc8_t c;
     uint16_t carry = 0;
     for (int i = 5; i >= 0; --i) {
@@ -80,9 +80,10 @@ hc8_t hc8_add_wrap(const hc8_t* a, const hc8_t* b) {
     return c;
 }
 
-leveled_hpdc8_t leveled_add(const leveled_hpdc8_t* a,
-                                     const leveled_hpdc8_t* b) {
+leveled_hpdc8_t leveled_add(const leveled_hpdc8_t* SGN_RESTRICT a,
+                                     const leveled_hpdc8_t* SGN_RESTRICT b) {
     leveled_hpdc8_t c;
+    if (!a || !b) { memset(&c, 0, sizeof(c)); return c; }
     c.level = a->level + b->level;
     uint16_t carry = 0;
     for (int i = 5; i >= 0; --i) {
@@ -96,8 +97,9 @@ leveled_hpdc8_t leveled_add(const leveled_hpdc8_t* a,
     return c;
 }
 
-shc8_t shc8_add(const shc8_t* a, const shc8_t* b) {
+shc8_t shc8_add(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b) {
     shc8_t zero = {0, 0, {{0,0,0,0,0,0}}};
+    if (!a || !b) return zero;
     if (a->sign == b->sign) {
         hc8_t mag_a, mag_b, sum;
         mag_a.v[0] = a->int_part;
@@ -143,7 +145,8 @@ shc8_t shc8_add(const shc8_t* a, const shc8_t* b) {
  * 减法
  * ============================================================================ */
 
-hc8_t hc8_sub(const hc8_t* a, const hc8_t* b) {
+hc8_t hc8_sub(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b) {
+    if (!a || !b) return SGN_HC8_ZERO;
     hc8_t c;
     int borrow = 0;
     for (int i = 5; i >= 0; --i) {
@@ -156,7 +159,9 @@ hc8_t hc8_sub(const hc8_t* a, const hc8_t* b) {
     return c;
 }
 
-shc8_t shc8_sub(const shc8_t* a, const shc8_t* b) {
+shc8_t shc8_sub(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b) {
+    shc8_t zero = {0, 0, {{0,0,0,0,0,0}}};
+    if (!a || !b) return zero;
     shc8_t neg_b;
     neg_b.sign = b->sign ? 0 : 1;
     neg_b.int_part = b->int_part;
@@ -168,13 +173,18 @@ shc8_t shc8_sub(const shc8_t* a, const shc8_t* b) {
  * 软阈值
  * ============================================================================ */
 
-hc8_t hc8_soft_threshold(const hc8_t* X, const hc8_t* Lambda) {
+hc8_t hc8_soft_threshold(const hc8_t* SGN_RESTRICT X, const hc8_t* SGN_RESTRICT Lambda) {
+    if (!X || !Lambda) return SGN_HC8_ZERO;
     if (hc8_less(X, Lambda) || hc8_equal(X, Lambda))
         return SGN_HC8_ZERO;
     return hc8_sub(X, Lambda);
 }
 
-shc8_t shc8_soft_threshold(const shc8_t* X, const shc8_t* Lambda) {
+shc8_t shc8_soft_threshold(const shc8_t* SGN_RESTRICT X, const shc8_t* SGN_RESTRICT Lambda) {
+    shc8_t zero;
+    zero.sign = 0; zero.int_part = 0;
+    memset(&zero.frac, 0, sizeof(zero.frac));
+    if (!X || !Lambda) return zero;
     shc8_t abs_X = *X; abs_X.sign = 0;
     shc8_t abs_L = *Lambda; abs_L.sign = 0;
     if (shc8_less(&abs_X, &abs_L)) {
@@ -192,7 +202,8 @@ shc8_t shc8_soft_threshold(const shc8_t* X, const shc8_t* Lambda) {
  * 移位与掩码
  * ============================================================================ */
 
-hc8_t hc8_shift_right(const hc8_t* a, uint8_t shift) {
+hc8_t hc8_shift_right(const hc8_t* SGN_RESTRICT a, uint8_t shift) {
+    if (!a) return SGN_HC8_ZERO;
     if (shift == 0) return *a;
     if (shift >= 8) return SGN_HC8_ZERO;
     hc8_t c;
@@ -205,7 +216,8 @@ hc8_t hc8_shift_right(const hc8_t* a, uint8_t shift) {
     return c;
 }
 
-hc8_t hc8_mask_threshold(const hc8_t* X, uint8_t mask) {
+hc8_t hc8_mask_threshold(const hc8_t* SGN_RESTRICT X, uint8_t mask) {
+    if (!X) return SGN_HC8_ZERO;
     hc8_t c;
     for (int i = 0; i < 6; ++i) c.v[i] = X->v[i] & ~mask;
     return c;
@@ -256,6 +268,7 @@ hc8_t hc8_from_double(double v, overflow_t policy) {
  * ============================================================================ */
 
 uint8_t hc8_checksum(const hc8_t* hc) {
+    if (!hc) return 0;
     static const uint8_t W[6] = {2, 3, 4, 5, 6, 7};
     uint16_t sum = 0;
     for (int i = 0; i < 6; ++i) sum += W[i] * hc->v[i];

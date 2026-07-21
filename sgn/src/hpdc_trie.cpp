@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_trie.cpp
  * @brief HPDC Trie 索引 ABI 实现
@@ -12,6 +15,7 @@
  * ============================================================================ */
 
 void trie_pool_init(trie_pool_t* pool) {
+    if (!pool) return;
     memset(pool, 0, sizeof(*pool));
     pool->next_free = 1;
     pool->nodes[0].byte = 0;
@@ -21,7 +25,7 @@ void trie_pool_init(trie_pool_t* pool) {
 }
 
 trie_node_t* trie_pool_alloc(trie_pool_t* pool) {
-    if (pool->next_free >= 2048) return nullptr;
+    if (!pool || pool->next_free >= 2048) return nullptr;
     trie_node_t* node = &pool->nodes[pool->next_free++];
     memset(node, 0, sizeof(*node));
     node->template_id = 0xFFFF;
@@ -39,6 +43,8 @@ trie_node_t* trie_find_child(const trie_node_t* node, uint8_t target) {
 }
 
 trie_node_t* trie_find_path(trie_node_t* root, const hc8_t* hc, int depth) {
+    if (!root || !hc) return nullptr;
+    if (depth < 0 || depth > 6) return root;
     trie_node_t* node = root;
     for (int layer = 0; layer < depth && node; ++layer) {
         uint8_t b = hc->v[layer];
@@ -51,6 +57,7 @@ trie_node_t* trie_find_path(trie_node_t* root, const hc8_t* hc, int depth) {
 
 trie_node_t* trie_insert_child(trie_node_t* parent, uint8_t b,
                                         trie_pool_t* pool) {
+    if (!parent || !pool) return nullptr;
     trie_node_t* existing = trie_find_child(parent, b);
     if (existing) return existing;
 
@@ -72,6 +79,7 @@ trie_node_t* trie_insert_child(trie_node_t* parent, uint8_t b,
 
 bool trie_insert_template(trie_node_t* root, const hc8_t* sig,
                                uint16_t tid, trie_pool_t* pool) {
+    if (!root || !sig || !pool) return false;
     trie_node_t* node = root;
     for (int layer = 0; layer < 6; ++layer) {
         uint8_t b = sig->v[layer];
@@ -90,7 +98,7 @@ void trie_lazy_delete(trie_node_t* leaf) {
 void trie_collect_leaves(const trie_node_t* node,
                               uint16_t* out_ids, uint16_t* out_count,
                               uint16_t max_count) {
-    if (!node || *out_count >= max_count) return;
+    if (!node || !out_ids || !out_count || *out_count >= max_count) return;
     if (SGN_TRIE_IS_LEAF(node)) {
         out_ids[(*out_count)++] = node->template_id;
         return;

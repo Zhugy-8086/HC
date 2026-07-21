@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_trie.h
  * @brief HPDC Trie 索引 ABI - 超度量树索引
@@ -162,6 +165,12 @@ void trie_collect_candidates(const trie_node_t* root,
                                  int k,
                                  uint16_t* cand_ids,
                                  uint16_t* cand_count);
+
+/* ============================================================================
+ * HC 种类辅助（从 hc.h 移入，避免基础层依赖上层）
+ * ============================================================================ */
+
+uint32_t trie_depth_for_hc(hc_kind_t kind);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_storage.cpp
  * @brief HPDC 存储与可靠性 ABI 实现
@@ -46,7 +49,7 @@ int file_read(const char* path, file_header_t* hdr,
 }
 
 void file_grade_up(file_record_t* rec, precision_t from, precision_t to) {
-    if (from >= to) return;
+    if (!rec || from >= to) return;
     /* 补零新的小数层 */
     for (int i = (int)from; i < (int)to && i < 6; ++i) {
         rec->frac[i] = 0;
@@ -54,7 +57,7 @@ void file_grade_up(file_record_t* rec, precision_t from, precision_t to) {
 }
 
 void file_grade_down(file_record_t* rec, precision_t from, precision_t to) {
-    if (from <= to) return;
+    if (!rec || from <= to) return;
     /* 截断更高的小数层 */
     for (int i = (int)to; i < (int)from && i < 6; ++i) {
         rec->frac[i] = 0;
@@ -106,6 +109,7 @@ uint32_t rle_decode(const rle_item_t* in, uint32_t n_items, hc8_t* out) {
 
 /* Merkle 树 */
 void merkle_init(merkle_tree_t* tree, uint16_t n_leaves) {
+    if (!tree) return;
     if (n_leaves == 0) { memset(tree, 0, sizeof(*tree)); return; }
     memset(tree, 0, sizeof(*tree));
     uint16_t pow2 = 1;
@@ -131,6 +135,7 @@ static void merkle_hash_add(const merkle_hash_t* a, const merkle_hash_t* b,
 
 void merkle_update_leaf(merkle_tree_t* tree, uint16_t tid,
                             const merkle_hash_t* new_leaf) {
+    if (!tree || !new_leaf) return;
     uint16_t node_idx = tree->leaf_start + tid;
     tree->nodes[node_idx] = *new_leaf;
     while (node_idx > 0) {
@@ -161,42 +166,80 @@ static uint8_t gf256_mul(uint8_t a, uint8_t b) {
 }
 
 void rs86_encode_lfsr(const uint8_t info[6], uint8_t codeword[8]) {
+    if (!info || !codeword) return;
+    /* RS(8,6) 系统编码：codeword = (info0..info5, c6, c7)
+     * 码字 c(x) 满足 c(alpha)=0, c(alpha^2)=0，alpha=2
+     * 直接解 2x2 线性方程组求 c6, c7 */
     memcpy(codeword, info, 6);
-    uint8_t remainder[2] = {0, 0};
-    for (int i = 0; i < 6; ++i) {
-        uint8_t feedback = remainder[1] ^ info[i];
-        remainder[1] = remainder[0] ^ gf256_mul(feedback, 0x02);
-        remainder[0] = feedback;
+    /* 预计算 alpha 幂次表（本原多项式 0x11D）*/
+    static uint8_t apow[255];
+    static bool inited = false;
+    if (!inited) {
+        apow[0] = 1;
+        for (int i = 1; i < 255; ++i) apow[i] = gf256_mul(apow[i-1], 0x02);
+        inited = true;
     }
-    codeword[6] = remainder[0];
-    codeword[7] = remainder[1];
+    /* m(alpha) = sum info_i * alpha^i ; m(alpha^2) = sum info_i * alpha^(2i) */
+    uint8_t ma = 0, ma2 = 0;
+    for (int i = 0; i < 6; ++i) {
+        ma  ^= gf256_mul(info[i], apow[i]);
+        ma2 ^= gf256_mul(info[i], apow[(2*i) % 255]);
+    }
+    /* 方程组（GF 加法 = 减法）：
+     *   c6*alpha^6  + c7*alpha^7  = ma
+     *   c6*alpha^12 + c7*alpha^14 = ma2
+     * 行列式 D = alpha^6*alpha^14 + alpha^7*alpha^12 = alpha^20 + alpha^19 */
+    uint8_t D = gf256_mul(apow[6], apow[14]) ^ gf256_mul(apow[7], apow[12]);
+    /* 求逆元：D 的 log，inv = alpha^(255 - log(D)) */
+    int logD = -1;
+    for (int i = 0; i < 255; ++i) if (apow[i] == D) { logD = i; break; }
+    if (logD < 0) { codeword[6] = 0; codeword[7] = 0; return; }
+    uint8_t invD = apow[(255 - logD) % 255];
+    uint8_t num6 = gf256_mul(ma, apow[14]) ^ gf256_mul(ma2, apow[7]);
+    uint8_t num7 = gf256_mul(ma2, apow[6])  ^ gf256_mul(ma, apow[12]);
+    codeword[6] = gf256_mul(num6, invD);
+    codeword[7] = gf256_mul(num7, invD);
 }
 
 bool rs86_decode_lfsr(uint8_t codeword[8]) {
+    if (!codeword) return false;
+    /* 综合症：s0 = c(alpha), s1 = c(alpha^2)
+     * 单错：s0 = e*alpha^pos, s1 = e*alpha^(2pos)
+     * => s1/s0 = alpha^pos => pos = log(s1/s0)；e = s0/alpha^pos */
+    static uint8_t apow[255];
+    static int logt[256];  /* log 表，logt[0] 未定义 */
+    static bool inited = false;
+    if (!inited) {
+        apow[0] = 1;
+        for (int i = 1; i < 255; ++i) apow[i] = gf256_mul(apow[i-1], 0x02);
+        for (int i = 0; i < 256; ++i) logt[i] = -1;
+        for (int i = 0; i < 255; ++i) logt[apow[i]] = i;
+        inited = true;
+    }
     uint8_t s0 = 0, s1 = 0;
-    uint8_t alpha_pow[8] = {1, 2, 4, 8, 16, 32, 64, 128};
     for (int i = 0; i < 8; ++i) {
-        s0 ^= gf256_mul(codeword[i], alpha_pow[i % 8]);
-        s1 ^= gf256_mul(codeword[i], alpha_pow[(2*i) % 8]);
+        s0 ^= gf256_mul(codeword[i], apow[i % 255]);
+        s1 ^= gf256_mul(codeword[i], apow[(2*i) % 255]);
     }
     if (s0 == 0 && s1 == 0) return true;
     if (s0 == 0) return false;
-
-    static const uint8_t inv_alpha_pow[8] = {1, 141, 203, 57, 224, 133, 195, 167};
-    for (int pos = 0; pos < 8; ++pos) {
-        if (gf256_mul(s0, alpha_pow[pos]) == s1) {
-            uint8_t err_val = gf256_mul(s1, inv_alpha_pow[pos]);
-            codeword[pos] ^= err_val;
-            return true;
-        }
-    }
-    return false;
+    /* ratio = s1 / s0 = alpha^pos */
+    if (logt[s0] < 0 || logt[s1] < 0) return false;
+    int log_ratio = (logt[s1] - logt[s0] + 255) % 255;
+    int pos = log_ratio;  /* pos = log_alpha(s1/s0) */
+    if (pos >= 8) return false;  /* 错误位置超出码字范围 */
+    /* e = s0 / alpha^pos */
+    int log_e = (logt[s0] - pos + 255) % 255;
+    uint8_t err = apow[log_e];
+    codeword[pos] ^= err;
+    return true;
 }
 
 /* CRC8 */
 static const uint8_t CRC8_POLY = 0x31;  /* x^8 + x^5 + x^4 + 1 */
 
 uint8_t crc8_compute(const uint8_t* data, uint8_t len) {
+    if (!data) return 0xFF;
     uint8_t crc = 0xFF;
     for (uint8_t i = 0; i < len; ++i) {
         crc ^= data[i];
@@ -212,11 +255,13 @@ static const uint8_t CS_WEIGHT[7] = {1, 2, 3, 4, 5, 6, 7};
 
 uint8_t checksum_delta(uint8_t old_cs, uint8_t layer,
                             uint8_t old_byte, uint8_t new_byte) {
+    if (layer >= 7) return old_cs;
     int16_t delta = (int16_t)CS_WEIGHT[layer] * ((int16_t)new_byte - (int16_t)old_byte);
     return (uint8_t)((old_cs + delta) & 0xFF);
 }
 
 bool runtime_sniff(const hc8_t* counters, uint16_t N, uint8_t expected_global_cs) {
+    if (!counters) return false;
     uint8_t actual = 0;
     for (uint16_t i = 0; i < N; ++i) {
         actual ^= hc8_checksum(&counters[i]);
@@ -227,6 +272,7 @@ bool runtime_sniff(const hc8_t* counters, uint16_t N, uint8_t expected_global_cs
 /* TMR 投票 */
 hc8_t tmr_vote(const hc8_t* a, const hc8_t* b, const hc8_t* c,
                         uint8_t* error_mask) {
+    if (!a || !b || !c || !error_mask) return SGN_HC8_ZERO;
     *error_mask = 0;
     hc8_t out;
 

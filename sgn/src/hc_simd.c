@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hc_simd.c
  * @brief SGN SIMD 批量运算实现
@@ -12,7 +15,9 @@
  */
 
 #include "hc/hc_simd.h"
+#include "hc/hc8.h"
 #include "hc/hc16.h"
+#include "hc/hc32.h"
 #include "hc/hc64.h"
 #include <string.h>
 
@@ -44,8 +49,41 @@
 
 #if SGN_HAS_SSE2
 
+/* ============================================================================
+ * HC8 批量操作
+ * ============================================================================ */
+
+void hc8_add_sat_batch(const hc8_t* a, const hc8_t* b,
+                                  hc8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc8_add_sat(&a[i], &b[i]);
+    }
+}
+
+void hc8_less_batch(const hc8_t* a, const hc8_t* b,
+                         uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc8_less(&a[i], &b[i]) ? 1 : 0;
+    }
+}
+
+void hc8_soft_threshold_batch(const hc8_t* a, const hc8_t* Lambda,
+                                     hc8_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc8_soft_threshold(&a[i], &Lambda[i]);
+    }
+}
+
+/* ============================================================================
+ * HC16 批量操作
+ * ============================================================================ */
+
 void hc16_add_sat_batch(const hc16_t* a, const hc16_t* b,
                                    hc16_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc16_add_sat(&a[i], &b[i]);
     }
@@ -60,6 +98,7 @@ void hc16_add_sat_batch(const hc16_t* a, const hc16_t* b,
 
 void hc16_less_batch(const hc16_t* a, const hc16_t* b,
                           uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc16_less(&a[i], &b[i]) ? 1 : 0;
     }
@@ -74,6 +113,7 @@ void hc16_less_batch(const hc16_t* a, const hc16_t* b,
 
 void hc16_scale_batch(const hc16_t* a, uint32_t factor_q16,
                            hc16_t* out, uint32_t n) {
+    if (!a || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         for (int j = 0; j < 4; ++j) {
             uint32_t s = ((uint32_t)a[i].v[j] * factor_q16) >> 16;
@@ -88,6 +128,7 @@ void hc16_scale_batch(const hc16_t* a, uint32_t factor_q16,
 
 void hc16_soft_threshold_batch(const hc16_t* a, const hc16_t* Lambda,
                                     hc16_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc16_soft_threshold(&a[i], &Lambda[i]);
     }
@@ -102,6 +143,7 @@ void hc16_soft_threshold_batch(const hc16_t* a, const hc16_t* Lambda,
 
 void hc64_add_sat_batch(const hc64_t* a, const hc64_t* b,
                                    hc64_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc64_add_sat(&a[i], &b[i]);
     }
@@ -113,15 +155,75 @@ void hc64_add_sat_batch(const hc64_t* a, const hc64_t* b,
 
 void hc64_less_batch(const hc64_t* a, const hc64_t* b,
                           uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc64_less(&a[i], &b[i]) ? 1 : 0;
     }
 }
 
+/* ============================================================================
+ * HC32 批量操作
+ * ============================================================================ */
+
+void hc32_add_sat_batch(const hc32_t* a, const hc32_t* b,
+                                   hc32_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc32_add_sat(&a[i], &b[i]);
+    }
+}
+
+void hc32_less_batch(const hc32_t* a, const hc32_t* b,
+                         uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc32_less(&a[i], &b[i]) ? 1 : 0;
+    }
+}
+
+void hc32_soft_threshold_batch(const hc32_t* a, const hc32_t* Lambda,
+                                    hc32_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc32_soft_threshold(&a[i], &Lambda[i]);
+    }
+}
+
 #else /* !SGN_HAS_SSE2 → 标量回退 */
+
+/* ============================================================================
+ * HC8 批量操作（标量回退）
+ * ============================================================================ */
+
+void hc8_add_sat_batch(const hc8_t* a, const hc8_t* b,
+                                  hc8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i) {
+        out[i] = hc8_add_sat(&a[i], &b[i]);
+    }
+}
+
+void hc8_less_batch(const hc8_t* a, const hc8_t* b,
+                         uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = hc8_less(&a[i], &b[i]) ? 1 : 0;
+}
+
+void hc8_soft_threshold_batch(const hc8_t* a, const hc8_t* Lambda,
+                                     hc8_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = hc8_soft_threshold(&a[i], &Lambda[i]);
+}
+
+/* ============================================================================
+ * HC16 批量操作（标量回退）
+ * ============================================================================ */
 
 void hc16_add_sat_batch(const hc16_t* a, const hc16_t* b,
                                    hc16_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         out[i] = hc16_add_sat(&a[i], &b[i]);
     }
@@ -129,12 +231,14 @@ void hc16_add_sat_batch(const hc16_t* a, const hc16_t* b,
 
 void hc16_less_batch(const hc16_t* a, const hc16_t* b,
                           uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i)
         out[i] = hc16_less(&a[i], &b[i]) ? 1 : 0;
 }
 
 void hc16_scale_batch(const hc16_t* a, uint32_t factor_q16,
                            hc16_t* out, uint32_t n) {
+    if (!a || !out) return;
     for (uint32_t i = 0; i < n; ++i) {
         for (int j = 0; j < 4; ++j) {
             uint32_t s = ((uint32_t)a[i].v[j] * factor_q16) >> 16;
@@ -145,20 +249,48 @@ void hc16_scale_batch(const hc16_t* a, uint32_t factor_q16,
 
 void hc16_soft_threshold_batch(const hc16_t* a, const hc16_t* Lambda,
                                     hc16_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
     for (uint32_t i = 0; i < n; ++i)
         out[i] = hc16_soft_threshold(&a[i], &Lambda[i]);
 }
 
 void hc64_add_sat_batch(const hc64_t* a, const hc64_t* b,
                                    hc64_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i)
         out[i] = hc64_add_sat(&a[i], &b[i]);
 }
 
 void hc64_less_batch(const hc64_t* a, const hc64_t* b,
                           uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
     for (uint32_t i = 0; i < n; ++i)
         out[i] = hc64_less(&a[i], &b[i]) ? 1 : 0;
+}
+
+/* ============================================================================
+ * HC32 批量操作（标量回退）
+ * ============================================================================ */
+
+void hc32_add_sat_batch(const hc32_t* a, const hc32_t* b,
+                                   hc32_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = hc32_add_sat(&a[i], &b[i]);
+}
+
+void hc32_less_batch(const hc32_t* a, const hc32_t* b,
+                         uint8_t* out, uint32_t n) {
+    if (!a || !b || !out) return;
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = hc32_less(&a[i], &b[i]) ? 1 : 0;
+}
+
+void hc32_soft_threshold_batch(const hc32_t* a, const hc32_t* Lambda,
+                                    hc32_t* out, uint32_t n) {
+    if (!a || !Lambda || !out) return;
+    for (uint32_t i = 0; i < n; ++i)
+        out[i] = hc32_soft_threshold(&a[i], &Lambda[i]);
 }
 
 #endif /* SGN_HAS_SSE2 */

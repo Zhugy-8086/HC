@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hc_simd.h
  * @brief SGN SIMD 批量运算接口
  * @version 2.0.0
@@ -9,7 +12,6 @@
  *
  * 支持平台：
  *   - x86/x64: SSE2 (默认), AVX2
- *   - ARM: NEON (待实现)
  *
  * 依赖：hc16.h, hc64.h
  */
@@ -17,12 +19,36 @@
 #ifndef SGN_HC_SIMD_H
 #define SGN_HC_SIMD_H
 
+#include "hc/hc8.h"
 #include "hc/hc16.h"
+#include "hc/hc32.h"
 #include "hc/hc64.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* ============================================================================
+ * HC8 SIMD 批量操作
+ * ============================================================================ */
+
+/**
+ * 批量 HC8 饱和加法：out[i] = saturate(a[i] + b[i])
+ */
+void hc8_add_sat_batch(const hc8_t* a, const hc8_t* b,
+                                  hc8_t* out, uint32_t n);
+
+/**
+ * 批量 HC8 比较：out[i] = (a[i] < b[i]) ? 1 : 0
+ */
+void hc8_less_batch(const hc8_t* a, const hc8_t* b,
+                         uint8_t* out, uint32_t n);
+
+/**
+ * 批量 HC8 软阈值：out[i] = max(a[i] - Lambda, 0)
+ */
+void hc8_soft_threshold_batch(const hc8_t* a, const hc8_t* Lambda,
+                                     hc8_t* out, uint32_t n);
 
 /* ============================================================================
  * HC16 SIMD 批量操作
@@ -70,7 +96,29 @@ void hc64_add_sat_batch(const hc64_t* a, const hc64_t* b,
  * 批量 HC64 比较：out[i] = (a[i] < b[i]) ? 1 : 0
  */
 void hc64_less_batch(const hc64_t* a, const hc64_t* b,
-                          uint8_t* out, uint32_t n);
+                         uint8_t* out, uint32_t n);
+
+/* ============================================================================
+ * HC32 SIMD 批量操作
+ * ============================================================================ */
+
+/**
+ * 批量 HC32 饱和加法：out[i] = saturate(a[i] + b[i])
+ */
+void hc32_add_sat_batch(const hc32_t* a, const hc32_t* b,
+                                   hc32_t* out, uint32_t n);
+
+/**
+ * 批量 HC32 比较：out[i] = (a[i] < b[i]) ? 1 : 0
+ */
+void hc32_less_batch(const hc32_t* a, const hc32_t* b,
+                         uint8_t* out, uint32_t n);
+
+/**
+ * 批量 HC32 软阈值：out[i] = max(a[i] - Lambda, 0)
+ */
+void hc32_soft_threshold_batch(const hc32_t* a, const hc32_t* Lambda,
+                                    hc32_t* out, uint32_t n);
 
 #ifdef __cplusplus
 }

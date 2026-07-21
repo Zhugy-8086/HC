@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_sandbox.cpp
  * @brief HPDC 投影沙盒 ABI 实现

@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file sgn_abi_dynamic.h
  * @brief 动态化改进核心 - 替换硬编码为表驱动
  * @version 1.1.0-draft

@@ -1,9 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_engine.cpp
  * @brief HPDC 引擎算法 ABI 实现 - WTA、LRU、形态学
  * @version 1.0.0
  *
- * 实现 hpdc_engine.h 中声明的所有引擎算法�? */
+ * 实现 hpdc_engine.h 中声明的所有引擎算法。
+ */
 
 #include "hc/hpdc_engine.h"
 #include <cstring>
@@ -14,6 +18,7 @@
  * ============================================================================ */
 
 uint8_t match_bits_hamming(const hc8_t* a, const hc8_t* b) {
+    if (!a || !b) return 0;
     uint8_t match = 0;
     for (int i = 0; i < 6; ++i) {
         if (a->v[i] == b->v[i]) match++;
@@ -31,6 +36,8 @@ void wta_compete(const trie_node_t* template_trie,
                      uint8_t K,
                      uint16_t* winner_ids,
                      uint8_t* winner_sims) {
+    if (!template_trie || !template_sigs || !query_sig || !winner_ids || !winner_sims) return;
+    if (K == 0) return;
     uint16_t candidates[256];
     uint16_t cand_count = 0;
     trie_collect_candidates(template_trie, query_sig, 2, candidates, &cand_count);
@@ -58,24 +65,29 @@ void wta_compete(const trie_node_t* template_trie,
 }
 
 /* ============================================================================
- * 软衰�? * ============================================================================ */
+ * 软衰减
+ * ============================================================================ */
 
 void soft_decay_all(hc8_t* hit_counters, uint16_t N, const hc8_t* Lambda) {
+    if (!hit_counters || !Lambda) return;
     for (uint16_t i = 0; i < N; ++i) {
         hit_counters[i] = hc8_soft_threshold(&hit_counters[i], Lambda);
     }
 }
 
 /* ============================================================================
- * LRU 计数与淘�? * ============================================================================ */
+ * LRU 计数与淘汰
+ * ============================================================================ */
 
 void lru_hit(hc8_t* counter, uint8_t delta_frac0) {
+    if (!counter) return;
     hc8_t delta = SGN_HC8_ZERO;
     delta.v[0] = delta_frac0;
     *counter = hc8_add_sat(counter, &delta);
 }
 
 void lru_decay_all(hc8_t* counters, uint16_t N, uint8_t lambda_frac0) {
+    if (!counters) return;
     hc8_t lambda = SGN_HC8_ZERO;
     lambda.v[0] = lambda_frac0;
     for (uint16_t i = 0; i < N; ++i) {
@@ -84,6 +96,7 @@ void lru_decay_all(hc8_t* counters, uint16_t N, uint8_t lambda_frac0) {
 }
 
 uint16_t lru_find_evict(const hc8_t* counters, uint16_t N, const uint8_t* is_core) {
+    if (!counters) return 0xFFFF;
     uint16_t best = 0xFFFF;
     hc8_t min_val = SGN_HC8_MAX;
     for (uint16_t i = 0; i < N; ++i) {
@@ -98,6 +111,7 @@ uint16_t lru_find_evict(const hc8_t* counters, uint16_t N, const uint8_t* is_cor
 
 void lru_promote_core(const hc8_t* counters, uint8_t* is_core,
                           uint16_t N, uint8_t threshold_int) {
+    if (!counters || !is_core) return;
     for (uint16_t i = 0; i < N; ++i) {
         if (counters[i].v[0] >= threshold_int) {
             is_core[i] = 1;
@@ -110,15 +124,17 @@ void lru_promote_core(const hc8_t* counters, uint8_t* is_core,
  * ============================================================================ */
 
 void merge_or(uint8_t* mask_a, const uint8_t* mask_b, uint8_t D_bytes) {
+    if (!mask_a || !mask_b) return;
     for (uint8_t i = 0; i < D_bytes; ++i) mask_a[i] |= mask_b[i];
 }
 
 void merge_and(uint8_t* mask_a, const uint8_t* mask_b, uint8_t D_bytes) {
+    if (!mask_a || !mask_b) return;
     for (uint8_t i = 0; i < D_bytes; ++i) mask_a[i] &= mask_b[i];
 }
 
 /* ============================================================================
- * 形态学算子（基�?Trie 的邻域操作）
+ * 形态学算子（基于 Trie 的邻域操作）
  * ============================================================================ */
 
 static void trie_collect_with_sig(const trie_node_t* node, uint8_t* path,
@@ -144,6 +160,8 @@ static void trie_collect_with_sig(const trie_node_t* node, uint8_t* path,
 
 void dilate(const trie_node_t* trie, const uint16_t* active_ids,
                 uint16_t N, int k, uint16_t* result_ids, uint16_t* result_count) {
+    if (!trie || !active_ids || !result_ids || !result_count) return;
+    if (k < 0 || k > 6) return;
     *result_count = 0;
     uint8_t path[6] = {0};
     hc8_t all_sigs[512];
@@ -172,6 +190,8 @@ void dilate(const trie_node_t* trie, const uint16_t* active_ids,
 
 void erode(const trie_node_t* trie, const uint8_t* S_bitmap,
                int k, uint16_t* result_ids, uint16_t* result_count) {
+    if (!trie || !S_bitmap || !result_ids || !result_count) return;
+    if (k < 0 || k > 6) return;
     *result_count = 0;
     uint8_t path[6] = {0};
     hc8_t all_sigs[512];
@@ -195,15 +215,15 @@ void erode(const trie_node_t* trie, const uint8_t* S_bitmap,
 
 void morph_open(const trie_node_t* trie, uint8_t* S_bitmap, int k,
               uint16_t* result_ids, uint16_t* result_count) {
+    if (!trie || !S_bitmap || !result_ids || !result_count) return;
     uint16_t eroded[512], eroded_count = 0;
     erode(trie, S_bitmap, k, eroded, &eroded_count);
-    memset(S_bitmap, 0, 512);
-    for (uint16_t i = 0; i < eroded_count; ++i) S_bitmap[eroded[i]] = 1;
     dilate(trie, eroded, eroded_count, k, result_ids, result_count);
 }
 
 void morph_close(const trie_node_t* trie, uint8_t* S_bitmap, int k,
                uint16_t* result_ids, uint16_t* result_count) {
+    if (!trie || !S_bitmap || !result_ids || !result_count) return;
     uint8_t path[6] = {0};
     hc8_t all_sigs[512];
     uint16_t all_ids[512];
@@ -215,9 +235,9 @@ void morph_close(const trie_node_t* trie, uint8_t* S_bitmap, int k,
     }
     uint16_t dilated[512], dilated_count = 0;
     dilate(trie, active, active_count, k, dilated, &dilated_count);
-    memset(S_bitmap, 0, 512);
-    for (uint16_t i = 0; i < dilated_count; ++i) S_bitmap[dilated[i]] = 1;
-    erode(trie, S_bitmap, k, result_ids, result_count);
+    uint8_t tmp_bitmap[512] = {0};
+    for (uint16_t i = 0; i < dilated_count; ++i) tmp_bitmap[dilated[i]] = 1;
+    erode(trie, tmp_bitmap, k, result_ids, result_count);
 }
 
 /* ============================================================================
@@ -264,6 +284,7 @@ static void bitonic_sort_rec(hc8_t* arr, uint16_t n, bool ascending) {
 }
 
 void sortnet_bitonic_hc8(hc8_t* arr, uint16_t N) {
+    if (!arr || N == 0) return;
     /* 如果不是 2 的幂，退化为插入排序（简单起见） */
     bool is_pow2 = (N > 0) && ((N & (N - 1)) == 0);
     if (!is_pow2) {
@@ -283,10 +304,11 @@ void sortnet_bitonic_hc8(hc8_t* arr, uint16_t N) {
 }
 
 /* ============================================================================
- * 逐层中位�? * ============================================================================ */
+ * 逐层中位数
+ * ============================================================================ */
 
 hc8_t median_layerwise(const hc8_t* values, uint16_t N) {
-    if (N == 0) return SGN_HC8_ZERO;
+    if (!values || N == 0) return SGN_HC8_ZERO;
     uint16_t* indices = (uint16_t*)malloc(N * sizeof(uint16_t));
     if (!indices) return SGN_HC8_ZERO;
     for (uint16_t i = 0; i < N; ++i) indices[i] = i;

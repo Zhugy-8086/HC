@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_normative.h
  * @brief HPDC 官方规范注册�?ABI - 内核级扩展接�? * @version 1.0.0
  *

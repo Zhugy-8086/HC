@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hpdc_network.h
  * @brief HPDC network & distributed ABI - UART, COBS, Lamport clock, watchdog

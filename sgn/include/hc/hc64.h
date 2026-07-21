@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hc64.h
  * @brief SGN HC64 类型声明与运算接口
  * @version 2.0.0
@@ -35,21 +38,21 @@ extern hc64_t SGN_HC64_ZERO;
 extern hc64_t SGN_HC64_MAX;
 
 /* 比较 */
-bool hc64_less(const hc64_t* a, const hc64_t* b);
-bool hc64_equal(const hc64_t* a, const hc64_t* b);
+bool hc64_less(const hc64_t* SGN_RESTRICT a, const hc64_t* SGN_RESTRICT b);
+bool hc64_equal(const hc64_t* SGN_RESTRICT a, const hc64_t* SGN_RESTRICT b);
 
 /* 加法 */
-hc64_t hc64_add_sat(const hc64_t* a, const hc64_t* b);
-hc64_t hc64_add_wrap(const hc64_t* a, const hc64_t* b);
+hc64_t hc64_add_sat(const hc64_t* SGN_RESTRICT a, const hc64_t* SGN_RESTRICT b);
+hc64_t hc64_add_wrap(const hc64_t* SGN_RESTRICT a, const hc64_t* SGN_RESTRICT b);
 
 /* 减法 */
-hc64_t hc64_sub(const hc64_t* a, const hc64_t* b);
+hc64_t hc64_sub(const hc64_t* SGN_RESTRICT a, const hc64_t* SGN_RESTRICT b);
 
 /* 软阈值 */
-hc64_t hc64_soft_threshold(const hc64_t* X, const hc64_t* Lambda);
+hc64_t hc64_soft_threshold(const hc64_t* SGN_RESTRICT X, const hc64_t* SGN_RESTRICT Lambda);
 
 /* 移位 */
-hc64_t hc64_shift_right(const hc64_t* a, uint8_t shift);
+hc64_t hc64_shift_right(const hc64_t* SGN_RESTRICT a, uint8_t shift);
 
 /* 物理值转换 */
 double      hc64_to_double(hc64_t h);

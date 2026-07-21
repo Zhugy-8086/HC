@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file test_sgn.c
  * @brief SGN 全模块自动化测试 - 数据驱动
  * Build: tcc -Isgn/include -Itests sgn/src/hc.c sgn/src/hc8.c sgn/src/hc16.c sgn/src/hc32.c sgn/src/hc64.c sgn/src/dc.c sgn/src/hc_simd.c tests/test_sgn.c -o tests/test_sgn.exe
@@ -13,6 +16,8 @@
 #include "hc/dc.h"
 #include "hc/hc_simd.h"
 #include "hc/sgn_macros.h"
+#include "hc/hpdc_sandbox.h"
+#include "hc/hpdc_trie.h"
 
 /* ============================================================================
  * 测试数据定义（外部于测试函数，便于扩展）
@@ -187,7 +192,7 @@ TEST(hc8_soft_threshold) {
 TEST(hc8_checksum) {
     hc8_t h = hc8_from_double(42.0, SGN_OVERFLOW_SATURATE);
     uint8_t cs = hc8_checksum(&h);
-    ASSERT_TRUE(cs != 0 || 1);  /* 不崩溃即通过 */
+    ASSERT_TRUE(cs != 0);
     /* 确定性：同样输入同样输出 */
     ASSERT_EQ(hc8_checksum(&h), cs);
 }
@@ -250,7 +255,7 @@ TEST(hc16_soft_threshold) {
 
 TEST(hc16_checksum) {
     hc16_t h = hc16_from_double(1234.5, SGN_OVERFLOW_SATURATE);
-    ASSERT_TRUE(hc16_checksum(&h) != 0 || 1);
+    ASSERT_TRUE(hc16_checksum(&h) != 0);
 }
 
 /* ============================================================================
@@ -320,6 +325,46 @@ TEST(hc64_compare) {
 TEST(hc64_constants) {
     ASSERT_NEAR(hc64_to_double(SGN_HC64_ZERO), 0.0, 0.001);
     ASSERT_TRUE(hc64_less(&SGN_HC64_ZERO, &SGN_HC64_MAX));
+}
+
+TEST(hc64_sub) {
+    hc64_t a = hc64_from_double(5e15, SGN_OVERFLOW_SATURATE);
+    hc64_t b = hc64_from_double(2e15, SGN_OVERFLOW_SATURATE);
+    hc64_t c = hc64_sub(&a, &b);
+    ASSERT_NEAR(hc64_to_double(c), 3e15, 1.0);
+
+    /* 下溢 */
+    hc64_t d = hc64_from_double(1.0, SGN_OVERFLOW_SATURATE);
+    hc64_t e = hc64_from_double(2.0, SGN_OVERFLOW_SATURATE);
+    hc64_t f = hc64_sub(&d, &e);
+    ASSERT_NEAR(hc64_to_double(f), 0.0, 0.001);
+}
+
+TEST(hc64_soft_threshold) {
+    hc64_t x = hc64_from_double(100.0, SGN_OVERFLOW_SATURATE);
+    hc64_t l = hc64_from_double(30.0, SGN_OVERFLOW_SATURATE);
+    hc64_t r = hc64_soft_threshold(&x, &l);
+    ASSERT_NEAR(hc64_to_double(r), 70.0, 0.1);
+
+    /* X <= Lambda 时归零 */
+    hc64_t x2 = hc64_from_double(10.0, SGN_OVERFLOW_SATURATE);
+    hc64_t l2 = hc64_from_double(20.0, SGN_OVERFLOW_SATURATE);
+    hc64_t r2 = hc64_soft_threshold(&x2, &l2);
+    ASSERT_NEAR(hc64_to_double(r2), 0.0, 0.001);
+}
+
+TEST(hc64_shift) {
+    hc64_t a = hc64_from_double(4.0, SGN_OVERFLOW_SATURATE);
+    hc64_t shifted = hc64_shift_right(&a, 1);
+    ASSERT_NEAR(hc64_to_double(shifted), 2.0, 0.01);
+
+    /* shift == 0 返回原值 */
+    hc64_t same = hc64_shift_right(&a, 0);
+    ASSERT_NEAR(hc64_to_double(same), 4.0, 0.001);
+
+    /* shift >= 64 返回 ZERO */
+    hc64_t zero = hc64_shift_right(&a, 64);
+    ASSERT_NEAR(hc64_to_double(zero), 0.0, 0.001);
 }
 
 /* ============================================================================
@@ -599,6 +644,9 @@ int main(void) {
     RUN(hc64_add);
     RUN(hc64_compare);
     RUN(hc64_constants);
+    RUN(hc64_sub);
+    RUN(hc64_soft_threshold);
+    RUN(hc64_shift);
 
     printf("[dc.c]\n");
     RUN(dc_roundtrip);

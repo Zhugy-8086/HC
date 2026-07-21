@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_plugin.h
  * @brief HPDC 插件架构 ABI - 动态加载、能力掩码、生命周期管�? * @version 1.0.0
  *

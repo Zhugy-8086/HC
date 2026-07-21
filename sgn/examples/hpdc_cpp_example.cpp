@@ -1,8 +1,13 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_cpp_example.cpp
- * @brief HPDC C++ 包装器使用示�? * @version 1.0.0
+ * @brief HPDC C++ 包装器使用示例
+ * @version 1.0.0
  *
- * 编译�? *   g++ -std=c++11 -I../include \
+ * 编译：
+ *   g++ -std=c++11 -I../include \
  *       ../src/hc.c ../src/hc8.c ../src/hc16.c ../src/hc32.c ../src/hc64.c ../src/dc.c \
  *       ../src/hpdc_sandbox.cpp ../src/hpdc_trie.cpp ../src/hpdc_engine.cpp \
  *       hpdc_cpp_example.cpp -o example
@@ -23,7 +28,8 @@ int main() {
      * ======================================================================== */
     std::cout << "\n--- HC8 (6 layers x 8 bits) ---" << std::endl;
 
-    HC8 a(3.14159);           // �?float 构�?    HC8 b(2.71828);
+    HC8 a(3.14159);           // 从 float 构造
+    HC8 b(2.71828);
     std::cout << "a = " << a.repr() << std::endl;
     std::cout << "b = " << b.repr() << std::endl;
 
@@ -37,11 +43,13 @@ int main() {
     std::cout << "a < b = " << (a < b) << std::endl;
     std::cout << "a == b = " << (a == b) << std::endl;
 
-    // 层访问（自动边界检查，layers=6�?    std::cout << "a[0] (int layer) = " << (int)a[0] << std::endl;
+    // 层访问（自动边界检查，layers=6）
+    std::cout << "a[0] (int layer) = " << (int)a[0] << std::endl;
     std::cout << "a[1] (frac[0])   = " << (int)a[1] << std::endl;
-    // a[10]; // 运行时会�?std::out_of_range
+    // a[10]; // 运行时会抛 std::out_of_range
 
-    // 序列�?    std::string bytes = a.to_bytes();
+    // 序列化
+    std::string bytes = a.to_bytes();
     HC8 a2 = HC8::from_bytes(bytes);
     std::cout << "roundtrip bytes: " << a2.repr() << std::endl;
 
@@ -51,7 +59,8 @@ int main() {
     std::cout << "zero = " << z.repr() << ", max = " << mx.repr() << std::endl;
 
     /* ========================================================================
-     * 2. HC16：完整功能（部分 C API 缺失，包装器内联补齐�?     * ======================================================================== */
+     * 2. HC16：完整功能（部分 C API 缺失，包装器内联补齐）
+     * ======================================================================== */
     std::cout << "\n--- HC16 (4 layers x 16 bits) ---" << std::endl;
 
     HC16 x(1000.5);
@@ -66,7 +75,8 @@ int main() {
 
     std::cout << "x < y = " << (x < y) << std::endl;
 
-    // 层访问（自动边界检查，layers=4�?    std::cout << "x[0] = " << x[0] << ", x[3] = " << x[3] << std::endl;
+    // 层访问（自动边界检查，layers=4）
+    std::cout << "x[0] = " << x[0] << ", x[3] = " << x[3] << std::endl;
 
     /* ========================================================================
      * 3. HC32：完整功能（阶段2 已补齐 C API）
@@ -86,12 +96,13 @@ int main() {
     std::cout << "big < big2 = " << (big < big2) << std::endl;
 
     /* ========================================================================
-     * 4. Sandbox：模板化投影与运�?     * ======================================================================== */
+     * 4. Sandbox：模板化投影与运算
+     * ======================================================================== */
     std::cout << "\n--- Sandbox ---" << std::endl;
 
     Sandbox sb;
 
-    // 自动分派 project：HC8 �?project_hc8，HC16 �?project_hc16，HC32 �?project_hc32
+    // 自动分派 project：HC8 → project_hc8，HC16 → project_hc16，HC32 → project_hc32
     double phi_a = sb.project(a);
     double phi_x = sb.project(x);
     double phi_big = sb.project(big);
@@ -99,7 +110,8 @@ int main() {
     std::cout << "project(x) = " << phi_x << std::endl;
     std::cout << "project(big) = " << phi_big << std::endl;
 
-    // 除法（任意除数！�?    HC8 q = sb.divide(a, b);
+    // 除法（任意除数！）
+    HC8 q = sb.divide(a, b);
     std::cout << "divide(a, b) = " << q.repr() << std::endl;
 
     // 梯度下降
@@ -111,7 +123,7 @@ int main() {
     HC8 scaled = sb.scale(a, 2.5);
     std::cout << "scale(a, 2.5) = " << scaled.repr() << std::endl;
 
-    // 泛型 map：任�?lambda
+    // 泛型 map：任意 lambda
     HC8 squared = sb.map(a, [](double v) { return v * v; });
     std::cout << "map(a, v*v) = " << squared.repr() << std::endl;
 
@@ -132,13 +144,16 @@ int main() {
     std::cout << std::endl;
 
     /* ========================================================================
-     * 5. DC：十进制定点数（空间变量�?     * ======================================================================== */
+     * 5. DC：十进制定点数（空间变量）
+     * ======================================================================== */
     std::cout << "\n--- DC (Decimal Coordinate) ---" << std::endl;
 
-    DC coord(0.1, 1);           // 1 位小�?    DC offset(0.001, 3);        // 3 位小�?    std::cout << "coord = " << coord.to_float() << " (level=" << coord.level() << ")" << std::endl;
+    DC coord(0.1, 1);           // 1 位小数
+    DC offset(0.001, 3);        // 3 位小数
+    std::cout << "coord = " << coord.to_float() << " (level=" << coord.level() << ")" << std::endl;
     std::cout << "offset = " << offset.to_float() << " (level=" << offset.level() << ")" << std::endl;
 
-    DC moved = coord + offset;  // 自动对齐�?level=3
+    DC moved = coord + offset;  // 自动对齐到 level=3
     std::cout << "coord + offset = " << moved.to_float() << " (level=" << moved.level() << ")" << std::endl;
 
     std::cout << "JSON: " << moved.to_json() << std::endl;
@@ -149,7 +164,8 @@ int main() {
     std::cout << "a -> dc -> hc roundtrip: " << to_hc.repr() << std::endl;
 
     /* ========================================================================
-     * 6. TriePool：超度量树索�?     * ======================================================================== */
+     * 6. TriePool：超度量树索引
+     * ======================================================================== */
     std::cout << "\n--- TriePool ---" << std::endl;
 
     TriePool pool;

@@ -1,35 +1,112 @@
 # SGN — 超度量数系技术栈
 
-> **版本**: 2.0.0
-> **目标平台**: AI8051U (48MHz/34KB SRAM/64KB Flash) 及 PC 端
-> **语言**: C11 / C++11
+> **版本**: v0.1
+> **语言**: C11 / C++11（含 Python 绑定）
+> **许可证**: Apache License 2.0
 
 ---
 
-## 简介
+## 1. 简介
 
 SGN (Signed Globular Number) 是一套基于超度量空间的自定义数值类型系统。核心思想：用多层字节表示数，每层是独立的进制位，天然构成超度量树结构。
 
-**核心类型**:
+**核心 HC 类型**（本仓库主线）：
 
 | 类型 | 层 × 位宽 | 精度 | 范围 | 用途 |
 |------|-----------|------|------|------|
-| HC8 | 6 × 8bit | 48bit 小数 | [0, 256) | 嵌入式主力 |
+| HC8  | 6 × 8bit  | 48bit 小数 | [0, 256) | 嵌入式主力 |
 | HC16 | 4 × 16bit | 64bit 小数 | [0, 65536) | 时间戳、高精度 |
 | HC32 | 3 × 32bit | 96bit 小数 | [0, 2³²) | PC 端高精度 |
-| HC64 | 2 × 64bit | 128bit 小数 | [0, 2⁶⁴) | 预留 |
-| DC | - | 十进制定点 | 精确十进制 | 空间变量 |
+| HC64 | 2 × 64bit | 128bit 小数 | [0, 2⁶⁴) | 高精度扩展 |
+
+**DC 类型**（HC 扩展，非独立 ABI）：
+
+| 类型 | 结构 | 物理值 | 当前定位 |
+|------|------|--------|---------|
+| `dc_t` | `(int64_t index, uint32_t level)` | `index / 10^level` | HC 与十进制世界互转的桥接扩展 |
 
 ---
 
-## 目录结构
+## 2. HC 的本职工作与扩展能力
+
+HC 的能力分两层。**本职工作**是 HC 存在的根本理由；**扩展能力**围绕 HC 字节层构建，按需链接，不被本职工作拖累。
+
+### 2.1 本职工作（HC 之所以存在）
+
+| 职责 | 说明 | 关键 API |
+|------|------|---------|
+| **作为时间变量** | HC 在 SGN 中以合体模式 `level × 256 + HC` 担任时间变量本身，提供时序高精度小数部分 | `leveled_hpdc8_t`、`leveled_add` |
+| **精确记录** | 模型文件、模板库、时序存档——任何要求跨平台字节级一致、可压缩、可校验的持久化场景 | 13 字节固定记录、Merkle/RS/CRC |
+| **超度量比较与索引** | 字典序即超度量距离，Trie 前缀即超度量球，天然支持层次聚类与最近邻 | `hc8_less` / `hc8_equal`、Trie |
+| **基础数值运算** | 加法（饱和/回绕/合体进位）、减法、软阈值、移位、校验和 | `hc8_add_sat` / `hc8_sub` / `hc8_soft_threshold` |
+
+### 2.2 HC 能干什么（扩展能力，按需链接）
+
+| 模块 | 能力 | 典型场景 |
+|------|------|---------|
+| **Trie 索引** | 256 叉超度量前缀树，前缀剪枝 + 候选收集 | 模板库快速匹配、超度量聚类 |
+| **WTA 引擎** | Trie 前缀剪枝 + Hamming 匹配 + Top-K 选择 | 竞争学习、最近模板 |
+| **LRU 引擎** | 命中递增 + 全局衰减 + 最小值淘汰 + 核心晋升 | 模板库容量管理 |
+| **形态学** | 膨胀/腐蚀/开/闭（基于 Trie 邻域） | 模板邻域扩展、噪声去除 |
+| **排序网络** | bitonic 排序（2 的幂递归，非 2 的幂退化） | 大规模模板排序 |
+| **存储可靠性** | RLE 压缩、Merkle 树、RS(8,6) 纠错、CRC8、HC 校验和、TMR 三模冗余 | 模型文件、Flash 容错、防篡改 |
+| **网络分布式** | UART 帧、COBS 零字节消除、Lamport 时钟、HC16 看门狗 | MCU 间同步、分布式事件排序 |
+| **插件系统** | NORMATIVE/EXTENSION/HYBRID 三类插件、动态加载、能力掩码 | 实验功能隔离、第三方扩展 |
+| **投影沙盒** | HC ↔ float64/float128 双向转换、除法/梯度/缩放 | PC 端数值实验 |
+| **SIMD 批量** | SSE2 加速批量加法/比较/软阈值（标量回退） | PC 端高吞吐 |
+
+> 嵌入式项目可只链接 HC 本职（`hc.c` + `hc8.c`），不引入任何扩展模块；PC 端按需追加 `hpdc_trie.cpp` / `hpdc_engine.cpp` / `hpdc_storage.cpp` 等。
+
+---
+
+## 3. HC 与 DC 是两个相互不同的 ABI
+
+### 3.1 关系定位
+
+```
+┌─────────────────────────────────────────┐
+│  HC ABI（本仓库主线）                    │
+│  - 字节层数组 (int_part, frac[])         │
+│  - 超度量空间、Trie 索引                 │
+│  - 时间变量承载、精确记录                │
+└─────────────────────────────────────────┘
+              ↕ 桥接扩展（非独立 ABI）
+┌─────────────────────────────────────────┐
+│  dc.h / dc.c（本仓库内的「DC 扩展」）    │
+│  - 十进制定点 (index, level)             │
+│  - 与 double / HC8 互转                  │
+│  - 不构成独立 DC ABI                     │
+└─────────────────────────────────────────┘
+```
+
+### 3.2 为什么当前 `dc.h` / `dc.c` 不是真正的 DC
+
+本仓库内的 `dc_t` 设计目标是「让 HC 能与十进制世界互转」，它的存在完全依附于 HC：
+
+- `dc_to_hc8` / `hc8_to_dc`：与 HC8 互转，是 HC 的桥接扩展
+- `dc_to_double` / `dc_from_double`：经过十进制与浮点世界沟通
+- `dc_serialize`：JSON 序列化，服务于 HC 模型文件描述
+
+它**没有**独立的 DC 运算体系（无 DC 自身的 Trie、WTA、Merkle 等），**没有**独立的 DC 存储格式，**没有**独立的 DC ABI 契约。因此：
+
+> 当前仓库的 `dc.h` / `dc.c` 应被视为 HC 的扩展模块，而不是 DC ABI 的实现。
+
+### 3.3 SGN 视角下的 HC 与 DC
+
+- **SGN 的时间变量**：HC 在 SGN 中以合体模式 `level × 256 + HC` 作为时间变量本身（HC 提供 256 叉小数层，level 提供整数范围）。
+- **SGN 的空间变量**：属于 SGN，使用纯整数 level 体系，与 HC 小数层无关。
+- **HC 与 DC**：是数值表示层的两个对偶 ABI，HC 是字节进制的超度量路径，DC 是十进制的阿基米德路径。HC 在 SGN 中作为时间变量，不强制使用 DC。
+
+---
+
+## 4. 目录结构
 
 ```
 hc/
 ├── include/hc/               ← 头文件（ABI 契约）
-│   ├── hc.h                    通用基础设施（元数据、错误码）
+│   ├── hc.h                    通用基础设施（元数据、错误码、版本）
 │   ├── hc8.h / hc16.h / hc32.h / hc64.h
-│   ├── dc.h                    十进制定点数
+│   ├── dc.h                    DC 扩展（HC 桥接，非独立 ABI）
 │   ├── hc_simd.h               SIMD 批量操作
 │   ├── sgn_macros.h            便利宏（可选，简化常见操作）
 │   ├── sgn.h                   统一入口（包含全部）
@@ -46,7 +123,7 @@ hc/
 ├── src/                      ← 实现文件
 │   ├── hc.c                    通用（元数据表、版本、通用转换）
 │   ├── hc8.c / hc16.c / hc32.c / hc64.c
-│   ├── dc.c                    DC 运算
+│   ├── dc.c                    DC 扩展实现（HC 桥接）
 │   ├── hc_simd.c               SIMD 批量操作（SSE2 + 标量回退）
 │   ├── hpdc_sandbox.cpp        投影沙盒
 │   ├── hpdc_trie.cpp           Trie 索引
@@ -56,21 +133,15 @@ hc/
 │   └── hpdc_plugin.cpp         插件系统
 │
 ├── bindings/python/          ← Python 绑定（pybind11）
-│   ├── pysgn.cpp
-│   ├── setup.py
-│   └── example_pysgn.py
 ├── examples/                 ← C++ 示例
-├── tests/                    ← 自动化测试（44 测试 / 156 断言）
-│   ├── sgn_test.h              测试框架
-│   └── test_sgn.c              数据驱动测试套件
-└── docs/                     ← 文档与规范
+└── tests/                    ← 自动化测试
 ```
 
 ---
 
-## 快速开始
+## 5. 快速开始
 
-### 嵌入式（按需链接最小集合）
+### 5.1 C（嵌入式最小集合）
 
 ```c
 #include "hc/hc16.h"
@@ -81,7 +152,13 @@ hc16_t c = hc16_add_sat(&a, &b);
 double v = hc16_to_double(c);  // 1500.75
 ```
 
-### 使用便利宏（可选）
+```bash
+# 仅需两个文件
+arm-none-eabi-gcc -c -Iinclude src/hc.c -o hc.o
+arm-none-eabi-gcc -c -Iinclude src/hc16.c -o hc16.o
+```
+
+### 5.2 使用便利宏（可选）
 
 ```c
 #include "hc/hc8.h"
@@ -109,13 +186,7 @@ hc8_t st = HC8_SOFT_THRESH(a, b);  // 软阈值
 
 > 嵌入式项目如需最小体积，可不包含 `sgn_macros.h`，不影响核心功能。
 
-```bash
-# 仅需两个文件
-arm-none-eabi-gcc -c -Iinclude src/hc.c -o hc.o
-arm-none-eabi-gcc -c -Iinclude src/hc16.c -o hc16.o
-```
-
-### PC 端 C++
+### 5.3 PC 端 C++
 
 ```cpp
 #include "hc/hpdc_cpp.hpp"
@@ -131,7 +202,7 @@ double phi = sb.project(a);
 HC8 q = sb.divide(a, b);
 ```
 
-### C++ 便利层（hpdc::op）
+### 5.4 C++ 便利层（hpdc::op）
 
 极简命名空间，类似 Sandbox 的 `map`/`map2` 体验：
 
@@ -157,7 +228,7 @@ HC8 h = from<HC8>(3.14);  // 从 double 创建
 | `to(v)` | `hc8_to_double(v)` | 5 vs 15 |
 | `from<T>(v)` | `hc8_from_double(v, ...)` | 10 vs 25 |
 
-### 类型安全宏
+### 5.5 类型安全宏
 
 `hc_value(ptr)` 通过 `_Generic` 在编译期自动推导 HC 类型，消除 `void*` 参数的类型安全隐患：
 
@@ -166,7 +237,7 @@ hc8_t h8 = hc8_from_double(3.14, SGN_OVERFLOW_SATURATE);
 double v = hc_value(&h8);  // 编译期自动选择 SGN_HC_KIND_8
 ```
 
-### Python
+### 5.6 Python
 
 ```bash
 cd bindings/python
@@ -191,9 +262,9 @@ inv = sb.inverse(phi)
 
 ---
 
-## 编译与测试
+## 6. 编译与测试
 
-### 使用 GCC
+### 6.1 使用 GCC
 
 ```bash
 gcc -std=c11 -O2 -Iinclude -Itests -o tests/test_sgn.exe \
@@ -202,7 +273,7 @@ gcc -std=c11 -O2 -Iinclude -Itests -o tests/test_sgn.exe \
 tests/test_sgn.exe
 ```
 
-### 使用 TCC
+### 6.2 使用 TCC
 
 ```bash
 tcc -O2 -Iinclude -Itests -o tests/test_sgn.exe \
@@ -211,16 +282,7 @@ tcc -O2 -Iinclude -Itests -o tests/test_sgn.exe \
 tests/test_sgn.exe
 ```
 
-```
-=== SGN Automated Test Suite ===
-
-[hc.c]  [hc8.c]  [shc8.c]  [hc16.c]  [hc32.c]  [hc64.c]  [dc.c]  [hc_simd.c]  [bench]  [macros]
-
-Tests: 44 | PASS: 156 | FAIL: 0
-ALL PASSED
-```
-
-### 编译选项
+### 6.3 编译选项
 
 | 宏 | 效果 |
 |----|------|
@@ -228,7 +290,7 @@ ALL PASSED
 | `SGN_USE_SIMD` | 启用 SSE2 批量操作（自动标量回退） |
 | `-O2` | 编译器优化（推荐） |
 
-### 添加新测试
+### 6.4 添加新测试
 
 ```c
 #include "sgn_test.h"
@@ -246,10 +308,10 @@ RUN(my_new_test);
 
 ---
 
-## 模块依赖
+## 7. 模块依赖
 
 ```
-hc.h ← hc8.h / hc16.h / hc32.h / hc64.h / dc.h
+hc.h ← hc8.h / hc16.h / hc32.h / hc64.h / dc.h（HC 扩展）
          ↓
 sgn_macros.h（可选）
          ↓
@@ -263,9 +325,9 @@ hpdc_storage.h    hpdc_network.h    hpdc_plugin.h
 
 ---
 
-## 命名规范
+## 8. 命名规范
 
-### C API
+### 8.1 C API
 
 函数名格式：`{类型}_{操作}[_{变体}]`
 
@@ -279,12 +341,12 @@ hc_value(&h)                  // 类型安全宏（_Generic 自动推导）
 类型名格式：`{类型}_t`
 
 ```c
-hc8_t, hc16_t, hc32_t, hc64_t    // 无符号
-shc8_t                             // 有符号
-dc_t                               // 十进制定点
+hc8_t, hc16_t, hc32_t, hc64_t    // 无符号 HC
+shc8_t                             // 有符号 HC
+dc_t                               // 十进制定点（HC 扩展，非独立 ABI）
 ```
 
-### C++ API
+### 8.2 C++ API
 
 命名空间 `hpdc`，类型别名 + 运算符重载：
 
@@ -301,7 +363,7 @@ using namespace hpdc::op;
 auto c = add(a, b);
 ```
 
-### C 宏
+### 8.3 C 宏
 
 格式：`{TYPE}_{操作}`
 
@@ -313,37 +375,22 @@ HC8_SOFT_THRESH(x, l)
 
 ---
 
-## 已完成的工程改造
-
-| 阶段 | 内容 |
-|------|------|
-| 问题1 | 8 个 bug 修复（Trie 越界、RS 解码、Lamport 进位、形态学、WTA、Merkle、COBS、median） |
-| 阶段1 | C 层按 HC 类型拆分（hc.c/hc8.c/hc16.c/hc32.c/hc64.c/dc.c） |
-| 阶段2 | HC16/32/64 全部标量运算补齐（26 个新函数） |
-| 阶段3 | 沙盒去重 + int_bits 校验，C++ 包装器 HC16/32 解锁 |
-| 阶段4 | RLE 编解码 + 文件 I/O 落地 |
-| 阶段5 | SIMD 批量操作（SSE2 + 标量回退） |
-| Python | 绑定更新：PyHC32/PyHC64 完整支持（运算符 + 沙盒） |
-| 测试 | 自动化测试框架 + 44 个数据驱动测试（156 断言） |
-| 编译 | GCC/TCC -O2 验证通过，全部头文件无冲突 |
-| 宏 | sgn_macros.h 便利宏（可选组件，简化常见操作） |
-| 命名 | 全局命名统一：去掉 `sgn_` 前缀，头文件路径 `sgn/` → `hc/`，宏名 `SGN_HC8_*` → `HC8_*` |
-| 便利层 | C++ `hpdc::op` 极简命名空间（add/sub/less/eq/thresh/to/from） |
-| 质量 | `hc_physical_value`/`hc_from_double` 泛化为元数据驱动，消除 if-else 链；`shc8_less` 改为逐字段比较；`#pragma pack(1)` 仅作用于 `hc8_t`；新增 `hc_value()` 类型安全宏 |
-| 许可证 | Apache License 2.0 |
-
----
-
-## 规范文档
-
-完整数学规范和工程规范位于 `docs/核心索引/sgn_spec/`：
-
-- **L0_core/** — 9 份核心地基（数学、运算、Trie、引擎、存储、网络、可靠性、配置、索引矩阵）
-- **L1_extensions/** — 14 份扩展（Hensel 提升、布隆过滤器、形态学、DFA 等）
-- **L2_bridge/** — PyTorch/ONNX 桥接（待完成）
-
----
-
-## 许可证
+## 9. 许可证
 
 Apache License 2.0 — 详见 [LICENSE](LICENSE)。
+
+```
+Copyright (c) 2026 zhugy-8086
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

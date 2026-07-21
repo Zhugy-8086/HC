@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_cpp.hpp
  * @brief HPDC 官方 C++ RAII 包装器（元数据驱动，零硬编码）
  * @version 1.0.0
@@ -201,34 +204,34 @@ template<> struct hc_api_traits<hc64_t> {
 /* ============================================================================
  * Sandbox 内部重载分派（避免模板技巧，直接函数重载）
  * ============================================================================ */
-inline double sb_project(sandbox_t* sb, const hc8_t& h)  { return sgn_sandbox_project_hc8(sb, h); }
-inline double sb_project(sandbox_t* sb, const hc16_t& h) { return sgn_sandbox_project_hc16(sb, h); }
-inline double sb_project(sandbox_t* sb, const hc32_t& h) { return sgn_sandbox_project_hc32(sb, h); }
+inline double sb_project(sandbox_t* sb, const hc8_t& h)  { return sandbox_project_hc8(sb, h); }
+inline double sb_project(sandbox_t* sb, const hc16_t& h) { return sandbox_project_hc16(sb, h); }
+inline double sb_project(sandbox_t* sb, const hc32_t& h) { return sandbox_project_hc32(sb, h); }
 inline double sb_project(sandbox_t* sb, const hc64_t& h) { return hc64_to_double(h) / sb->R; }
 
-inline hc8_t  sb_inverse(sandbox_t* sb, double phi, const hc8_t&)  { return sgn_sandbox_inverse_hc8(sb, phi); }
-inline hc16_t sb_inverse(sandbox_t* sb, double phi, const hc16_t&) { return sgn_sandbox_inverse_hc16(sb, phi); }
-inline hc32_t sb_inverse(sandbox_t* sb, double phi, const hc32_t&) { return sgn_sandbox_inverse_hc32(sb, phi); }
+inline hc8_t  sb_inverse(sandbox_t* sb, double phi, const hc8_t&)  { return sandbox_inverse_hc8(sb, phi); }
+inline hc16_t sb_inverse(sandbox_t* sb, double phi, const hc16_t&) { return sandbox_inverse_hc16(sb, phi); }
+inline hc32_t sb_inverse(sandbox_t* sb, double phi, const hc32_t&) { return sandbox_inverse_hc32(sb, phi); }
 inline hc64_t sb_inverse(sandbox_t* sb, double phi, const hc64_t&) {
     if (phi < 0.0) phi = 0.0;
     if (phi >= 1.0) phi = 0.9999999999999999;
     return hc64_from_double(phi * sb->R, SGN_OVERFLOW_SATURATE);
 }
 
-inline hc8_t  sb_divide(sandbox_t* sb, const hc8_t& a, const hc8_t& b)  { return sgn_sandbox_divide_hc8(sb, a, b); }
-inline hc16_t sb_divide(sandbox_t* sb, const hc16_t& a, const hc16_t& b) { return sgn_sandbox_divide_hc16(sb, a, b); }
-inline hc32_t sb_divide(sandbox_t* sb, const hc32_t& a, const hc32_t& b) { return sgn_sandbox_divide_hc32(sb, a, b); }
-inline hc64_t sb_divide(sandbox_t* sb, const hc64_t& a, const hc64_t& b) { return sgn_sandbox_divide_hc64(sb, a, b); }
+inline hc8_t  sb_divide(sandbox_t* sb, const hc8_t& a, const hc8_t& b)  { return sandbox_divide_hc8(sb, a, b); }
+inline hc16_t sb_divide(sandbox_t* sb, const hc16_t& a, const hc16_t& b) { return sandbox_divide_hc16(sb, a, b); }
+inline hc32_t sb_divide(sandbox_t* sb, const hc32_t& a, const hc32_t& b) { return sandbox_divide_hc32(sb, a, b); }
+inline hc64_t sb_divide(sandbox_t* sb, const hc64_t& a, const hc64_t& b) { return sandbox_divide_hc64(sb, a, b); }
 
-inline hc8_t  sb_gradient(sandbox_t* sb, const hc8_t& h, double g, double e)  { return sgn_sandbox_gradient_hc8(sb, h, g, e); }
-inline hc16_t sb_gradient(sandbox_t* sb, const hc16_t& h, double g, double e) { return sgn_sandbox_gradient_hc16(sb, h, g, e); }
-inline hc32_t sb_gradient(sandbox_t* sb, const hc32_t& h, double g, double e) { return sgn_sandbox_gradient_hc32(sb, h, g, e); }
-inline hc64_t sb_gradient(sandbox_t* sb, const hc64_t& h, double g, double e) { return sgn_sandbox_gradient_hc64(sb, h, g, e); }
+inline hc8_t  sb_gradient(sandbox_t* sb, const hc8_t& h, double g, double e)  { return sandbox_gradient_hc8(sb, h, g, e); }
+inline hc16_t sb_gradient(sandbox_t* sb, const hc16_t& h, double g, double e) { return sandbox_gradient_hc16(sb, h, g, e); }
+inline hc32_t sb_gradient(sandbox_t* sb, const hc32_t& h, double g, double e) { return sandbox_gradient_hc32(sb, h, g, e); }
+inline hc64_t sb_gradient(sandbox_t* sb, const hc64_t& h, double g, double e) { return sandbox_gradient_hc64(sb, h, g, e); }
 
-inline hc8_t  sb_scale(sandbox_t* sb, const hc8_t& h, double f)  { return sgn_sandbox_scale_hc8(sb, h, f); }
-inline hc16_t sb_scale(sandbox_t* sb, const hc16_t& h, double f) { return sgn_sandbox_scale_hc16(sb, h, f); }
-inline hc32_t sb_scale(sandbox_t* sb, const hc32_t& h, double f) { return sgn_sandbox_scale_hc32(sb, h, f); }
-inline hc64_t sb_scale(sandbox_t* sb, const hc64_t& h, double f) { return sgn_sandbox_scale_hc64(sb, h, f); }
+inline hc8_t  sb_scale(sandbox_t* sb, const hc8_t& h, double f)  { return sandbox_scale_hc8(sb, h, f); }
+inline hc16_t sb_scale(sandbox_t* sb, const hc16_t& h, double f) { return sandbox_scale_hc16(sb, h, f); }
+inline hc32_t sb_scale(sandbox_t* sb, const hc32_t& h, double f) { return sandbox_scale_hc32(sb, h, f); }
+inline hc64_t sb_scale(sandbox_t* sb, const hc64_t& h, double f) { return sandbox_scale_hc64(sb, h, f); }
 
 } /* namespace detail */
 
@@ -317,7 +320,7 @@ class DC {
 public:
     DC() = default;
     DC(int64_t idx, uint32_t lvl) : raw_{idx, lvl} {}
-    explicit DC(double v, uint32_t lvl) : raw_(sgn_double_to_dc(v, lvl)) {}
+    explicit DC(double v, uint32_t lvl) : raw_(dc_from_double(v, lvl)) {}
     explicit DC(const dc_t& r) : raw_(r) {}
 
     double to_float() const { return dc_to_double(&raw_); }
@@ -326,19 +329,19 @@ public:
 
     std::string to_json() const {
         char buf[64];
-        sgn_dc_serialize(&raw_, buf, sizeof(buf));
+        dc_serialize(&raw_, buf, sizeof(buf));
         return std::string(buf);
     }
 
     DC to_level(uint32_t target) const { return DC(dc_to_level(&raw_, target)); }
 
-    bool operator<(const DC& o) const  { return sgn_dc_less(&raw_, &o.raw_); }
-    bool operator==(const DC& o) const { return sgn_dc_equal(&raw_, &o.raw_); }
+    bool operator<(const DC& o) const  { return dc_less(&raw_, &o.raw_); }
+    bool operator==(const DC& o) const { return dc_equal(&raw_, &o.raw_); }
     bool operator!=(const DC& o) const { return !(*this == o); }
 
-    DC operator+(const DC& o) const { return DC(sgn_dc_add(&raw_, &o.raw_)); }
-    DC operator-(const DC& o) const { return DC(sgn_dc_sub(&raw_, &o.raw_)); }
-    DC operator*(const DC& o) const { return DC(sgn_dc_mul(&raw_, &o.raw_)); }
+    DC operator+(const DC& o) const { return DC(dc_add(&raw_, &o.raw_)); }
+    DC operator-(const DC& o) const { return DC(dc_sub(&raw_, &o.raw_)); }
+    DC operator*(const DC& o) const { return DC(dc_mul(&raw_, &o.raw_)); }
 
     const dc_t& raw() const { return raw_; }
     dc_t& raw() { return raw_; }
@@ -352,10 +355,10 @@ class Sandbox {
 
 public:
     Sandbox(sgn_precision_t prec = SGN_PREC_STD, uint32_t int_bits = 8)
-        : sb_(sgn_sandbox_create(prec, int_bits)) {
+        : sb_(sandbox_create(prec, int_bits)) {
         if (!sb_) throw std::runtime_error("Failed to create sandbox");
     }
-    ~Sandbox() { sgn_sandbox_destroy(sb_); }
+    ~Sandbox() { sandbox_destroy(sb_); }
 
     Sandbox(const Sandbox&) = delete;
     Sandbox& operator=(const Sandbox&) = delete;
@@ -437,10 +440,10 @@ public:
 
     /* 方案切换 */
     int set_scheme(const std::string& name) {
-        return sgn_sandbox_set_scheme(sb_, name.c_str());
+        return sandbox_set_scheme(sb_, name.c_str());
     }
     std::string get_scheme() const {
-        const char* s = sgn_sandbox_get_scheme(sb_);
+        const char* s = sandbox_get_scheme(sb_);
         return s ? std::string(s) : "default";
     }
 };
@@ -452,7 +455,7 @@ class TriePool {
     trie_pool_t pool_;
 
 public:
-    TriePool() { sgn_trie_pool_init(&pool_); }
+    TriePool() { trie_pool_init(&pool_); }
     TriePool(const TriePool&) = delete;
     TriePool& operator=(const TriePool&) = delete;
     /* 不实现移动：内部指针自引用，移动后悬挂 */
@@ -463,6 +466,37 @@ public:
 
     trie_pool_t* native() { return &pool_; }
     const trie_pool_t* native() const { return &pool_; }
+};
+
+/* ============================================================================
+ * Plugin RAII 包装器
+ * ============================================================================ */
+class Plugin {
+    plugin_handle_t* h_;
+
+public:
+    explicit Plugin(const std::string& path)
+        : h_(plugin_load(path.c_str())) {
+        if (!h_) throw std::runtime_error("Failed to load plugin: " + path);
+    }
+    ~Plugin() {
+        if (h_) plugin_unload(h_);
+    }
+
+    Plugin(const Plugin&) = delete;
+    Plugin& operator=(const Plugin&) = delete;
+    Plugin(Plugin&& o) noexcept : h_(o.h_) { o.h_ = nullptr; }
+    Plugin& operator=(Plugin&& o) noexcept {
+        if (this != &o) {
+            if (h_) plugin_unload(h_);
+            h_ = o.h_;
+            o.h_ = nullptr;
+        }
+        return *this;
+    }
+
+    plugin_handle_t* native() const { return h_; }
+    bool is_valid() const { return h_ != nullptr; }
 };
 
 /* ============================================================================

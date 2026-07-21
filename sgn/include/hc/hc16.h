@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hc16.h
  * @brief SGN HC16 类型声明与运算接口
  * @version 2.0.0
@@ -45,21 +48,21 @@ extern hc16_t SGN_HC16_ZERO;
 extern hc16_t SGN_HC16_MAX;
 
 /* 比较 */
-bool hc16_less(const hc16_t* a, const hc16_t* b);
-bool hc16_equal(const hc16_t* a, const hc16_t* b);
+bool hc16_less(const hc16_t* SGN_RESTRICT a, const hc16_t* SGN_RESTRICT b);
+bool hc16_equal(const hc16_t* SGN_RESTRICT a, const hc16_t* SGN_RESTRICT b);
 
 /* 加法 */
-hc16_t hc16_add_sat(const hc16_t* a, const hc16_t* b);
-hc16_t hc16_add_wrap(const hc16_t* a, const hc16_t* b);
+hc16_t hc16_add_sat(const hc16_t* SGN_RESTRICT a, const hc16_t* SGN_RESTRICT b);
+hc16_t hc16_add_wrap(const hc16_t* SGN_RESTRICT a, const hc16_t* SGN_RESTRICT b);
 
 /* 减法 */
-hc16_t hc16_sub(const hc16_t* a, const hc16_t* b);
+hc16_t hc16_sub(const hc16_t* SGN_RESTRICT a, const hc16_t* SGN_RESTRICT b);
 
 /* 软阈值 */
-hc16_t hc16_soft_threshold(const hc16_t* X, const hc16_t* Lambda);
+hc16_t hc16_soft_threshold(const hc16_t* SGN_RESTRICT X, const hc16_t* SGN_RESTRICT Lambda);
 
 /* 移位 */
-hc16_t hc16_shift_right(const hc16_t* a, uint8_t shift);
+hc16_t hc16_shift_right(const hc16_t* SGN_RESTRICT a, uint8_t shift);
 
 /* 物理值转换 */
 double      hc16_to_double(hc16_t h);

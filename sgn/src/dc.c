@@ -1,9 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file dc.c
  * @brief SGN DC（十进制定点数）运算实现
  * @version 2.0.0
  *
- * 从原 hpdc_core.cpp 迁移 DC 运算部分�? *
+ * 从原 hpdc_core.cpp 迁移 DC 运算部分。
+ *
  * 依赖：dc.h, hc.h
  */
 
@@ -26,6 +30,7 @@ static int64_t dc_pow10(uint32_t exp) {
 
 static void dc_align(const dc_t* a, const dc_t* b,
                      int64_t* a_idx, int64_t* b_idx, uint32_t* out_level) {
+    if (!a || !b || !a_idx || !b_idx || !out_level) return;
     if (a->level >= b->level) {
         uint32_t delta = a->level - b->level;
         *a_idx = a->index;
@@ -44,21 +49,25 @@ static void dc_align(const dc_t* a, const dc_t* b,
  * ============================================================================ */
 
 bool dc_less(const dc_t* a, const dc_t* b) {
+    if (!a || !b) return false;
     int64_t ai, bi; uint32_t lvl;
     dc_align(a, b, &ai, &bi, &lvl);
     return ai < bi;
 }
 
 bool dc_equal(const dc_t* a, const dc_t* b) {
+    if (!a || !b) return false;
     int64_t ai, bi; uint32_t lvl;
     dc_align(a, b, &ai, &bi, &lvl);
     return ai == bi;
 }
 
 /* ============================================================================
- * 跨精度转�? * ============================================================================ */
+ * 跨精度转换
+ * ============================================================================ */
 
 dc_t dc_to_level(const dc_t* a, uint32_t target_level) {
+    if (!a) { dc_t c = {0, 0}; return c; }
     dc_t c = *a;
     if (target_level > a->level) {
         c.index *= dc_pow10(target_level - a->level);
@@ -75,6 +84,7 @@ dc_t dc_to_level(const dc_t* a, uint32_t target_level) {
  * ============================================================================ */
 
 dc_t dc_add(const dc_t* a, const dc_t* b) {
+    if (!a || !b) { dc_t c = {0, 0}; return c; }
     int64_t ai, bi; uint32_t lvl;
     dc_align(a, b, &ai, &bi, &lvl);
     dc_t c;
@@ -84,6 +94,7 @@ dc_t dc_add(const dc_t* a, const dc_t* b) {
 }
 
 dc_t dc_sub(const dc_t* a, const dc_t* b) {
+    if (!a || !b) { dc_t c = {0, 0}; return c; }
     int64_t ai, bi; uint32_t lvl;
     dc_align(a, b, &ai, &bi, &lvl);
     dc_t c;
@@ -93,6 +104,7 @@ dc_t dc_sub(const dc_t* a, const dc_t* b) {
 }
 
 dc_t dc_mul(const dc_t* a, const dc_t* b) {
+    if (!a || !b) { dc_t c = {0, 0}; return c; }
     dc_t c;
     int64_t result = a->index * b->index;
     if (a->index != 0 && result / a->index != b->index) {
@@ -105,10 +117,11 @@ dc_t dc_mul(const dc_t* a, const dc_t* b) {
 }
 
 /* ============================================================================
- * �?double 互转
+ * 与 double 互转
  * ============================================================================ */
 
 double dc_to_double(const dc_t* a) {
+    if (!a) return 0.0;
     return (double)a->index / pow(10.0, (double)a->level);
 }
 
@@ -121,11 +134,12 @@ dc_t dc_from_double(double v, uint32_t level) {
 }
 
 /* ============================================================================
- * �?HC8 互转
+ * 与 HC8 互转
  * ============================================================================ */
 
 hc8_t dc_to_hc8(const dc_t* a, precision_t prec) {
     (void)prec;
+    if (!a) return SGN_HC8_ZERO;
     double v = dc_to_double(a);
     hc8_t h;
     memset(&h, 0, sizeof(h));
@@ -134,7 +148,8 @@ hc8_t dc_to_hc8(const dc_t* a, precision_t prec) {
 }
 
 dc_t hc8_to_dc(const uint8_t* hc8_v, uint32_t level) {
-    /* 手动计算 HC8 物理�?*/
+    if (!hc8_v) { dc_t c = {0, 0}; return c; }
+    /* 手动计算 HC8 物理值 */
     double v = 0.0;
     double scale = 1.0;
     for (int i = 0; i < 6; ++i) {
@@ -145,9 +160,11 @@ dc_t hc8_to_dc(const uint8_t* hc8_v, uint32_t level) {
 }
 
 /* ============================================================================
- * JSON 序列�? * ============================================================================ */
+ * JSON 序列化
+ * ============================================================================ */
 
 uint32_t dc_serialize(const dc_t* a, char* out_buf, uint32_t buf_size) {
+    if (!a || !out_buf || buf_size == 0) return 0;
     int n = snprintf(out_buf, buf_size, "{\"index\":%lld,\"level\":%u}",
                      (long long)a->index, a->level);
     return (n > 0 && (uint32_t)n < buf_size) ? (uint32_t)n : 0;

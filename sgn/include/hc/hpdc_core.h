@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_core.h
  * @brief 向后兼容头文件 - 转发到新的模块化头文件
  * @version 2.0.0

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hc.h
  * @brief SGN 通用 HC 基础设施 - 元数据、错误码、类型枚举、宏
@@ -73,7 +76,8 @@ typedef enum {
     SGN_MODE_HC_ONLY    = 0,
     SGN_MODE_LEVEL_ONLY = 1,
     SGN_MODE_COMBINED   = 2
-} mode_t;
+} sgn_mode_t;
+/* 注：原 mode_t 与 POSIX/MinGW 系统类型冲突，重命名为 sgn_mode_t */
 
 typedef enum {
     SGN_OVERFLOW_SATURATE = 0,
@@ -110,26 +114,15 @@ const char* error_string(error_t err);
 /** 通用物理值计算：通过 kind 查表 */
 double hc_physical_value(const void* hc_raw, hc_kind_t kind);
 
-/** 类型安全的物理值计算（编译期检查指针类型） */
-#define hc_value(ptr) _Generic((ptr), \
-    hc8_t*:  hc_physical_value((ptr), SGN_HC_KIND_8),  \
-    hc16_t*: hc_physical_value((ptr), SGN_HC_KIND_16), \
-    hc32_t*: hc_physical_value((ptr), SGN_HC_KIND_32), \
-    hc64_t*: hc_physical_value((ptr), SGN_HC_KIND_64), \
-    default: hc_physical_value((ptr), SGN_HC_KIND_8)  \
-)
-
 /** 通用 double→HC 转换 */
 void hc_from_double(double v, overflow_t policy,
                       void* out_hc, hc_kind_t kind);
 
 /* ============================================================================
- * 沙盒联动辅助
+ * 沙盒联动辅助（声明在各自模块头文件中）
  * ============================================================================ */
 
-uint32_t sandbox_default_int_bits(hc_kind_t kind);
-bool     sandbox_int_bits_valid(hc_kind_t kind, uint32_t int_bits);
-uint32_t trie_depth_for_hc(hc_kind_t kind);
+/* 已移至 hpdc_sandbox.h 和 hpdc_trie.h */
 
 /* ============================================================================
  * ABI 版本查询
@@ -147,6 +140,19 @@ uint32_t abi_version(void);
 
 #ifndef SGN_MAX_CANDIDATES
 #   define SGN_MAX_CANDIDATES 16
+#endif
+
+/* ============================================================================
+ * restrict 可移植宏（提升编译器优化能力）
+ * C99 使用 restrict，C++/MSVC 使用 __restrict，否则退化为空。
+ * ============================================================================ */
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#   define SGN_RESTRICT restrict
+#elif defined(__cplusplus) && (defined(_MSC_VER) || defined(__GNUC__) || defined(__clang__))
+#   define SGN_RESTRICT __restrict
+#else
+#   define SGN_RESTRICT
 #endif
 
 #ifdef __cplusplus

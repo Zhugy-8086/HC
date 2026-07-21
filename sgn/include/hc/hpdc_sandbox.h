@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_sandbox.h
  * @brief HPDC 投影沙盒 ABI - 浮点编程接口
  * @version 1.0.0
@@ -255,6 +258,13 @@ int sandbox_set_scheme(sandbox_t* sb, const char* scheme_name);
  * @return 方案名称字符串，默认 "default"
  */
 const char* sandbox_get_scheme(const sandbox_t* sb);
+
+/* ============================================================================
+ * HC 种类辅助（从 hc.h 移入，避免基础层依赖上层）
+ * ============================================================================ */
+
+uint32_t sandbox_default_int_bits(hc_kind_t kind);
+bool     sandbox_int_bits_valid(hc_kind_t kind, uint32_t int_bits);
 
 #ifdef __cplusplus
 } /* extern "C" */

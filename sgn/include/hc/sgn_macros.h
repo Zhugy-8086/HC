@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file sgn_macros.h
  * @brief SGN 便利宏 - 简化常见操作
  * @version 1.0.0

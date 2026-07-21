@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
 /**
  * @file hc8.h
  * @brief SGN HC8 类型声明与运算接口
@@ -44,28 +47,28 @@ extern hc8_t SGN_HC8_ZERO;
 extern hc8_t SGN_HC8_MAX;
 
 /* 比较 */
-bool hc8_less(const hc8_t* a, const hc8_t* b);
-bool hc8_equal(const hc8_t* a, const hc8_t* b);
-bool shc8_less(const shc8_t* a, const shc8_t* b);
+bool hc8_less(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b);
+bool hc8_equal(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b);
+bool shc8_less(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b);
 
 /* 加法 */
-hc8_t hc8_add_sat(const hc8_t* a, const hc8_t* b);
-hc8_t hc8_add_wrap(const hc8_t* a, const hc8_t* b);
-leveled_hpdc8_t leveled_add(const leveled_hpdc8_t* a,
-                                     const leveled_hpdc8_t* b);
-shc8_t shc8_add(const shc8_t* a, const shc8_t* b);
+hc8_t hc8_add_sat(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b);
+hc8_t hc8_add_wrap(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b);
+leveled_hpdc8_t leveled_add(const leveled_hpdc8_t* SGN_RESTRICT a,
+                                     const leveled_hpdc8_t* SGN_RESTRICT b);
+shc8_t shc8_add(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b);
 
 /* 减法 */
-hc8_t hc8_sub(const hc8_t* a, const hc8_t* b);
-shc8_t shc8_sub(const shc8_t* a, const shc8_t* b);
+hc8_t hc8_sub(const hc8_t* SGN_RESTRICT a, const hc8_t* SGN_RESTRICT b);
+shc8_t shc8_sub(const shc8_t* SGN_RESTRICT a, const shc8_t* SGN_RESTRICT b);
 
 /* 软阈值 */
-hc8_t hc8_soft_threshold(const hc8_t* X, const hc8_t* Lambda);
-shc8_t shc8_soft_threshold(const shc8_t* X, const shc8_t* Lambda);
+hc8_t hc8_soft_threshold(const hc8_t* SGN_RESTRICT X, const hc8_t* SGN_RESTRICT Lambda);
+shc8_t shc8_soft_threshold(const shc8_t* SGN_RESTRICT X, const shc8_t* SGN_RESTRICT Lambda);
 
 /* 移位与掩码 */
-hc8_t hc8_shift_right(const hc8_t* a, uint8_t shift);
-hc8_t hc8_mask_threshold(const hc8_t* X, uint8_t mask);
+hc8_t hc8_shift_right(const hc8_t* SGN_RESTRICT a, uint8_t shift);
+hc8_t hc8_mask_threshold(const hc8_t* SGN_RESTRICT X, uint8_t mask);
 
 /* 有符号/无符号互转 */
 shc8_t hc8_to_shc8(hc8_t x);

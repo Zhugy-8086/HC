@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 zhugy-8086
+
 """
 Setup script for pysgn - Python binding for HPDC ABI.
 
@@ -58,6 +61,7 @@ setup(
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
     python_requires=">=3.7",
+    install_requires=["pybind11>=2.6.0"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

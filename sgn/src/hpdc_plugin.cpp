@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file hpdc_plugin.cpp
  * @brief HPDC 插件架构 ABI 实现
  * @version 1.0.0
@@ -30,7 +33,7 @@
     typedef void* plugin_dlhandle_t;
 #endif
 
-/* 插件内部状�?*/
+/* 插件内部状态 */
 typedef enum {
     SGN_PLUGIN_STATE_LOADED    = 0,
     SGN_PLUGIN_STATE_ACTIVE    = 1,
@@ -159,7 +162,7 @@ static plugin_handle_t* plugin_find_by_name(const char* name) {
     return nullptr;
 }
 
-/* 插件管理�?API 实现 */
+/* 插件管理器 API 实现 */
 plugin_handle_t* plugin_load(const char* path) {
     if (!path) return nullptr;
     int slot = plugin_find_free_slot();

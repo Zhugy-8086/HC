@@ -1,4 +1,7 @@
-﻿/**
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 zhugy-8086
+
+/**
  * @file sgn.h
  * @brief SGN 技术栈统一入口（PC 开发/测试用）
  * @version 2.0.0
