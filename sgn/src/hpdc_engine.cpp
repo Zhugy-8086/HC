@@ -48,7 +48,7 @@ void wta_compete(const trie_node_t* template_trie,
     for (uint16_t i = 0; i < cand_count && n < 256; ++i) {
         uint16_t tid = candidates[i];
         uint8_t sim = match_bits_hamming(query_sig, &template_sigs[tid]);
-        buf[n++] = (entry_t){tid, sim};
+        buf[n++] = entry_t{tid, sim};
     }
 
     for (uint16_t i = 0; i < K && i < n; ++i) {
