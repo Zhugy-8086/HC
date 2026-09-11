@@ -1,5 +1,9 @@
 # SGN — 超度量数系技术栈
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22711085.svg)](https://doi.org/10.5281/zenodo.22711085)
+
+> **引用**：概念 DOI `10.5281/zenodo.22711085`（始终解析到最新版本）；精确引用本版（v0.2.0）用 `10.5281/zenodo.22711086`。
+
 > **主版本**: ABI v2.0.0 (SGN_ABI_MAJOR=2, SGN_ABI_MINOR=0, SGN_ABI_PATCH=0)
 > **语言**: C11 / C++11 / C++23（含 Python 绑定 via pybind11）
 > **许可证**: Apache License 2.0 — 见 [LICENSE](LICENSE)
