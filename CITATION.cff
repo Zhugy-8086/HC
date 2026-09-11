@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "HC/SGN: Hypermetric Number System and Integer Quantization Kernels (Archived)"
+abstract: >-
+  A custom number-type system built on hypermetric (ultrametric) space:
+  multi-level byte arrays form a 256-/65536-way tree where lexicographic
+  order is the ultrametric distance and prefixes are ultrametric balls.
+  Two tracks: (v0.1) the full SGN mainline — HC8/16/32/64 types, DC,
+  HPDC engine/sandbox/trie/storage, pybind11 bindings, minimal-linkage
+  MCU usage (time variables, exact records, flash-tolerant logging);
+  (v0.2) the final C version of the neural-network quantization extension —
+  HC8/HC16 integer matrix-multiply paths (int4/8/16, AVX2/FMA/AVX-VNNI),
+  SBE block quantization, Conv2d fusion, multi-view storage.
+  Status: archived. The hypermetric route for neural-network training was
+  falsified by dual-library verification (ultrametric inequality violation
+  rate ~100% for gradients); the repository is retained for its number
+  types and forward quantization-inference results.
+type: software
+authors:
+  - family-names: "Zhu"
+    given-names: "Guangya"
+    alias: "Zhugy-8086"
+    orcid: "https://orcid.org/0009-0006-9979-8359"
+    website: "https://github.com/Zhugy-8086"
+version: "v0.2.0"
+date-released: "2026-09-11"
+license: Apache-2.0
+repository-code: "https://github.com/Zhugy-8086/HC"
+url: "https://github.com/Zhugy-8086/HC"
+keywords:
+  - number system
+  - ultrametric
+  - stochastic rounding
+  - integer quantization
+  - AVX-VNNI
+  - embedded
+  - archived software

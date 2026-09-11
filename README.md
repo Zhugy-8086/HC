@@ -12,7 +12,7 @@
 
 > ⚠️ **状态：已完结（数学上已证伪）**
 > 本仓库（HC / SGN 数值类型系统）已完成并归档。但需注意：作为**神经网络数系路线**，
-> HC 在数学上已被证伪——详见 [math-verification](https://github.com/Zhugy-8086/math-verification)
+> HC 在数学上已被证伪——详见 [integer-quant-math-verification](https://github.com/Zhugy-8086/integer-quant-math-verification)
 > 的"超度量违反率≈100%"结论：梯度幅度在 log 距离下不满足超度量不等式，
 > HC 赖以成立的超度量结构在 NN 场景下不成立，**无法支持反向梯度/训练**。
 > 因此 HC 的神经网络方向终止；本仓库仅保留其数值类型与（前向）量化推理成果作为归档。
@@ -304,3 +304,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+> **维护注记（2026-09-11）**：v0.2 核心 C 内核（hc4_pshufb / hc16_net / hc16ms /
+> col2im_c）已同步 SGN 主线正确性修复——LUT 并发初始化原子化、`_aligned_free` 判空、
+> `_mm256_sad_epu8` 索引修正、`size_t` 溢出防护。SGN 主线的后续演化（hc8_net 新增
+> L1 距离内核、pybind11 绑定扩展等）见 [SGN 主仓](https://github.com/Zhugy-8086/SGN)，不再回灌本归档。
