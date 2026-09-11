@@ -1,8 +1,4 @@
 /**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
-/**
  * @file hc4_pshufb.h
  * @brief HC4 PSHUFB LUT - int4×int4→int8 查表乘法（AVX2 _mm256_shuffle_epi8）
  * @version 1.6.0

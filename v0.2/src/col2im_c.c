@@ -1,7 +1,3 @@
-/**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
 #include "col2im_c.h"
 #include <string.h>
 

@@ -1,8 +1,4 @@
 /**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
-/**
  * @file hc4_pshufb.c
  * @brief HC4 PSHUFB LUT - int4×int4→int8 查表乘法 C 实现
  * @version 1.6.0
@@ -77,14 +73,13 @@ static uint8_t g_mul_lut[256] __attribute__((aligned(64)));
 #endif
 
 static void hc4_init_lut(void) {
-    static int initialized = 0;
-    if (initialized) return;
+    static volatile long initialized = 0;
+    if (_InterlockedCompareExchange(&initialized, 1, 0) == 1) return;
     for (int b = 0; b < 16; ++b) {
         for (int a = 0; a < 16; ++a) {
             g_mul_lut[b * 16 + a] = (uint8_t)(a * b);
         }
     }
-    initialized = 1;
 }
 
 /* ============================================================================
@@ -95,7 +90,7 @@ static void hc4_init_lut(void) {
     ((type*)_aligned_malloc((size_t)(n) * sizeof(type), 64))
 
 #define HC4_PSHUFB_ALIGNED_FREE(ptr) \
-    do { _aligned_free(ptr); (ptr) = NULL; } while (0)
+    do { if ((ptr) != NULL) { _aligned_free(ptr); (ptr) = NULL; } } while (0)
 
 /* ============================================================================
  * PSHUFB 单批次乘法：32 个 uint4 × uint4 → 32 个 uint8
@@ -214,30 +209,18 @@ void hc4_pshufb_matmul(const uint8_t* a, const uint8_t* b,
                     }
 
                     /* 累加 32 个 uint8 乘积到 int32
-                     * 方案：4 次 _mm256_sad_epu8（8 个 uint8 → int64，每次 4 组）
-                     * 或：扩展到 int16 后 madd */
-                    /* 方案 A: _mm256_sad_epu8（无符号 abs diff sum，但这里是乘积不是差）
-                     * 不适用，因为 prod 是乘积值，不是 a-b
-                     * 改用：拆分高低 16 位，扩展后累加 */
-
-                    /* prod 是 32 个 uint8 乘积值
-                     * 拆为 4 个 8 字节块，每块 8 个 uint8
-                     * 用 _mm256_unpacklo/hi_epi8 扩展到 int16，再 madd */
-                    __m256i prod_lo = _mm256_unpacklo_epi8(prod, _mm256_setzero_si256());
-                    __m256i prod_hi = _mm256_unpackhi_epi8(prod, _mm256_setzero_si256());
-
-                    /* prod_lo/hi 是 16 个 int16，用 madd 累加到 int32 */
-                    __m256i sum_lo = _mm256_madd_epi16(prod_lo, _mm256_set1_epi16(1));
-                    __m256i sum_hi = _mm256_madd_epi16(prod_hi, _mm256_set1_epi16(1));
-
-                    /* 提取 8 个 int32 累加（sum_lo/sum_hi 各 8 个 int32） */
-                    int32_t tmp[8];
-                    _mm256_storeu_si256((__m256i*)tmp, sum_lo);
-                    acc += tmp[0] + tmp[1] + tmp[2] + tmp[3]
-                         + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-                    _mm256_storeu_si256((__m256i*)tmp, sum_hi);
-                    acc += tmp[0] + tmp[1] + tmp[2] + tmp[3]
-                         + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+                     * SSSE3 优化: _mm256_sad_epu8 替代 unpack+madd
+                     * sad 将 256-bit 分成 2 个 128-bit lane，每 lane 内 2 组 8 字节 SAD，
+                     * 4 个 16-bit sum 分别位于 word 0 / 4 / 8 / 12（256-bit 全局
+                     * word 索引）。原代码取 word 0/2/4/6——word2/6 恒为 0、
+                     * word4 被重复计入 sum[8..15]，等效丢失每组后 16 字节乘积，
+                     * 结果静默错误（存量失败 test_4/5/6 根因） */
+                    __m256i zero = _mm256_setzero_si256();
+                    __m256i sad = _mm256_sad_epu8(prod, zero);
+                    acc += (int32_t)(uint16_t)_mm256_extract_epi16(sad, 0);   /* sum[0..7]   */
+                    acc += (int32_t)(uint16_t)_mm256_extract_epi16(sad, 4);   /* sum[8..15]  */
+                    acc += (int32_t)(uint16_t)_mm256_extract_epi16(sad, 8);   /* sum[16..23] */
+                    acc += (int32_t)(uint16_t)_mm256_extract_epi16(sad, 12);  /* sum[24..31] */
                 }
 
                 /* 标量尾部 */
@@ -281,11 +264,13 @@ void hc4_pshufb_quantized_matmul(const float* x, const float* w,
     /* scale = max(|w|) / 7（uint4 有符号范围 [-7, 7]） */
 
     float x_max = 0.0f, w_max = 0.0f;
-    for (uint32_t i = 0; i < m * k; ++i) {
+    size_t x_total = (size_t)m * k;
+    size_t w_total = (size_t)k * n;
+    for (size_t i = 0; i < x_total; ++i) {
         float a = fabsf(x[i]);
         if (a > x_max) x_max = a;
     }
-    for (uint32_t i = 0; i < k * n; ++i) {
+    for (size_t i = 0; i < w_total; ++i) {
         float a = fabsf(w[i]);
         if (a > w_max) w_max = a;
     }
@@ -306,14 +291,14 @@ void hc4_pshufb_quantized_matmul(const float* x, const float* w,
     float x_inv = 1.0f / x_scale;
     float w_inv = 1.0f / w_scale;
 
-    for (uint32_t i = 0; i < m * k; ++i) {
+    for (size_t i = 0; i < x_total; ++i) {
         int32_t q = (int32_t)lroundf(x[i] * x_inv) + 8;
         if (q < 0) q = 0;
         else if (q > 15) q = 15;
         x_q[i] = (uint8_t)q;
     }
 
-    for (uint32_t i = 0; i < k * n; ++i) {
+    for (size_t i = 0; i < w_total; ++i) {
         int32_t q = (int32_t)lroundf(w[i] * w_inv) + 8;
         if (q < 0) q = 0;
         else if (q > 15) q = 15;
@@ -338,6 +323,14 @@ void hc4_pshufb_quantized_matmul(const float* x, const float* w,
     /* 预计算 sum_l x_q[i][l] 和 sum_l w_q[l][j] */
     int32_t* x_sum = (int32_t*)calloc(m, sizeof(int32_t));
     int32_t* w_sum = (int32_t*)calloc(n, sizeof(int32_t));
+    if (x_sum == NULL || w_sum == NULL) {
+        free(x_sum);
+        free(w_sum);
+        free(x_q);
+        free(w_q);
+        free(out_int);
+        return;
+    }
 
     for (uint32_t i = 0; i < m; ++i) {
         int32_t s = 0;

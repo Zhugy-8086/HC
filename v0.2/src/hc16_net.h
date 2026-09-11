@@ -1,8 +1,4 @@
 /**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
-/**
  * @file hc16_net.h
  * @brief HC16 神经网络运算扩展（MSInt 位宽链中间层）
  * @version 1.5.0
@@ -31,7 +27,7 @@
  *   - AVX2 intrinsics（编译时 /arch:AVX2）
  *
  * 参考：
- *   - 数学验证：fixes_相关修复/architecture/msint_math_validation_2026_07_30.py
+ *   - 数学验证：内部验证记录（结论已内联于本模块注释）
  *   - 指令集兼容性：fixes_相关修复/architecture/instruction_set_compatibility_research_2026_07_30.md
  *   - SIMD 设计：fixes_相关修复/hc_quantization/simd/hc_simd_avx_vnni_design.md
  *   - HC8 接口规范：hc8_net.h（设计模式参考）

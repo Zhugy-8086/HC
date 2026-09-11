@@ -1,8 +1,4 @@
 /**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
-/**
  * @file hc16_net.c
  * @brief HC16 神经网络运算扩展（MSInt 位宽链中间层）C 实现
  * @version 1.5.0
@@ -79,8 +75,10 @@ int hc16_detect_avx2(void) {
 #define HC16_ALIGNED_ALLOC(n, type) \
     ((type*)_aligned_malloc((size_t)(n) * sizeof(type), 64))
 
+/* NULL 检查与 hc8_net.c/hc4_pshufb.c 统一（_aligned_free(NULL) 跨平台 UB
+ * 防御——安全审计 2026-08-16 H16-1） */
 #define HC16_ALIGNED_FREE(ptr) \
-    do { _aligned_free(ptr); (ptr) = NULL; } while (0)
+    do { if ((ptr) != NULL) { _aligned_free(ptr); (ptr) = NULL; } } while (0)
 
 static void* hc16_aligned_calloc(size_t count, size_t size) {
     void* p = _aligned_malloc(count * size, 64);

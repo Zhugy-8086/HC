@@ -1,7 +1,3 @@
-/**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
 #ifdef __cplusplus
 #include <bit>
 #endif
@@ -216,7 +212,8 @@ static inline void hc16ms_write_hc4(hc16ms_t* h,
 
 /* ============================================================================
  * 量化方案：float → hc16ms_t（不同视角）
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * HC16 视角量化：float → hc16ms_t（1 个 int16）
@@ -405,5 +402,7 @@ int hc16ms_detect_avx2(void);
 #ifdef __cplusplus
 }
 #endif
+
+#pragma pack(pop)
 
 #endif /* SGN_HC16MS_H */

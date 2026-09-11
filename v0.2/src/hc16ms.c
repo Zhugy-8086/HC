@@ -1,8 +1,4 @@
 /**
- * SPDX-License-Identifier: Apache-2.0
- * Copyright (c) 2026 zhugy-8086
- */
-/**
  * @file hc16ms.c
  * @brief HC16MS - MSInt int16 容器多视角存储 C 实现（方案 B）
  * @version 1.5.0
@@ -95,8 +91,9 @@ int hc16ms_detect_avx2(void) {
 #define HC16MS_ALIGNED_ALLOC(n, type) \
     ((type*)_aligned_malloc((size_t)(n) * sizeof(type), 64))
 
+/* NULL 检查与 hc8_net.c/hc4_pshufb.c 统一（安全审计 2026-08-16 H16M-1） */
 #define HC16MS_ALIGNED_FREE(ptr) \
-    do { _aligned_free(ptr); (ptr) = NULL; } while (0)
+    do { if ((ptr) != NULL) { _aligned_free(ptr); (ptr) = NULL; } } while (0)
 
 static void* hc16ms_aligned_calloc(size_t count, size_t size) {
     void* p = _aligned_malloc(count * size, 64);
